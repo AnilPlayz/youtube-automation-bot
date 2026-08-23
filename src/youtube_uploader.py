@@ -23,9 +23,9 @@ def get_authenticated_service():
     Builds YouTube API service client from environment credentials / refresh token.
     Supports GitHub Actions headless authentication.
     """
-    client_id = os.getenv("YOUTUBE_CLIENT_ID")
-    client_secret = os.getenv("YOUTUBE_CLIENT_SECRET")
-    refresh_token = os.getenv("YOUTUBE_REFRESH_TOKEN")
+    client_id = (os.getenv("YOUTUBE_CLIENT_ID") or "").strip().strip('"').strip("'")
+    client_secret = (os.getenv("YOUTUBE_CLIENT_SECRET") or "").strip().strip('"').strip("'")
+    refresh_token = (os.getenv("YOUTUBE_REFRESH_TOKEN") or "").strip().strip('"').strip("'")
 
     if not (client_id and client_secret and refresh_token):
         print("[YouTube Uploader Warning] Missing YouTube OAuth credentials (YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN).")

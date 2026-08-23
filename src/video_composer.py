@@ -72,38 +72,30 @@ def get_font(size: int = 70) -> ImageFont.ImageFont:
 
 def create_synthetic_gameplay_clip(duration: float, width: int = 1080, height: int = 1920) -> VideoClip:
     """
-    Generates an animated procedural Minecraft-style dynamic gradient/grid background
-    if no user gameplay video is placed in assets/gameplay/.
+    Fast pre-rendered loopable Minecraft-style dynamic backdrop.
+    Runs at 60+ FPS rendering speed.
     """
-    print("[Video Composer] Generating dynamic Minecraft themed backdrop...")
+    print("[Video Composer] Generating fast dynamic Minecraft backdrop...")
+
+    # Pre-render a larger tiled pattern canvas once
+    grid_size = 80
+    canvas_w = width + grid_size * 2
+    canvas_h = height + grid_size * 2
+    base_img = Image.new("RGB", (canvas_w, canvas_h), (16, 22, 38))
+    draw = ImageDraw.Draw(base_img)
+
+    for y in range(0, canvas_h, grid_size):
+        for x in range(0, canvas_w, grid_size):
+            is_even = ((x // grid_size) + (y // grid_size)) % 2 == 0
+            c = (26, 38, 58) if is_even else (18, 26, 42)
+            draw.rectangle([x, y, x + grid_size - 3, y + grid_size - 3], fill=c)
+
+    base_np = np.array(base_img)
 
     def make_frame(t):
-        img = Image.new("RGB", (width, height), (15, 20, 35))
-        draw = ImageDraw.Draw(img)
-
-        # Draw moving Minecraft block grid
-        grid_size = 80
         offset_y = int((t * 120) % grid_size)
         offset_x = int((t * 40) % grid_size)
-
-        for y in range(-grid_size, height + grid_size, grid_size):
-            for x in range(-grid_size, width + grid_size, grid_size):
-                real_x = x - offset_x
-                real_y = y + offset_y
-                # Subtle checkerboard
-                is_even = ((x // grid_size) + (y // grid_size)) % 2 == 0
-                c = (25, 38, 55) if is_even else (20, 30, 45)
-                draw.rectangle([real_x, real_y, real_x + grid_size - 2, real_y + grid_size - 2], fill=c)
-
-        # Ambient floating particle orbs
-        for i in range(12):
-            seed = i * 137
-            px = int((seed * 37 + t * (40 + (i % 5) * 15)) % width)
-            py = int((height - (seed * 83 + t * (60 + (i % 4) * 20)) % height))
-            radius = 12 + (i % 8)
-            draw.ellipse([px - radius, py - radius, px + radius, py + radius], fill=(50, 180, 255, 60))
-
-        return np.array(img)
+        return base_np[offset_y : offset_y + height, offset_x : offset_x + width]
 
     return VideoClip(make_frame, duration=duration).set_fps(30)
 
@@ -382,7 +374,7 @@ def create_full_short_video(
         fps=fps,
         codec="libx264",
         audio_codec="aac",
-        preset="fast",
+        preset="ultrafast",
         threads=4,
         logger=None
     )

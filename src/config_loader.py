@@ -32,8 +32,5 @@ def load_config() -> dict:
 
 def get_gemini_api_key() -> str:
     """Retrieve Gemini API key from environment."""
-    key = os.getenv("GEMINI_API_KEY")
-    if not key:
-        # Check standard GEMINI_API_KEY or GOOGLE_API_KEY
-        key = os.getenv("GOOGLE_API_KEY")
-    return key or ""
+    key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
+    return key.strip().strip('"').strip("'")
