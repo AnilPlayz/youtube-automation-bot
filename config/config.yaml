@@ -19,8 +19,8 @@ player:
   avatar_animation: "talking_bob"
 
 voice:
-  tts_voice: "en-US-ChristopherNeural"
-  tts_rate: "+12%"
+  tts_voice: "hi-IN-MadhurNeural"
+  tts_rate: "+10%"
   tts_pitch: "+0Hz"
 
 script:

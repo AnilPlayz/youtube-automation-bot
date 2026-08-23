@@ -225,37 +225,96 @@ def get_player_avatar(custom_username: Optional[str] = None) -> Image.Image:
 
 def generate_avatar_frame(base_avatar: Image.Image, t: float, animation_type: str = "talking_bob") -> Image.Image:
     """
-    Generates dynamic animated frames for the avatar over time t (seconds).
-    - 'talking_bob': Energetic vertical bobbing + slight tilt when speaking
-    - 'breathe': Gentle floating breathing rhythm
-    - 'static': Unchanged
+    Generates dynamic animated frames for the avatar simulating a real human explainer.
+    
+    Layered animation system:
+    - Talking bob: Energetic vertical movement synced to speech rhythm
+    - Head tilt: Natural side-to-side head movement like explaining
+    - Breathing: Subtle scale pulse for lifelike feel
+    - Emphasis bounce: Periodic bigger bounces for emphasis moments
+    - Lean-in: Occasional forward lean (scale up) for dramatic points
+    - Hand gesture simulation: Slight horizontal sway as if gesturing
     """
     if animation_type == "static":
         return base_avatar
 
     w, h = base_avatar.size
+    pad = 40  # Extra padding for movement room
+
     if animation_type == "talking_bob":
-        # Frequency ~ 4 Hz (talking pace)
-        bob_offset_y = int(math.sin(t * 7.0) * 12)
-        tilt_angle = math.sin(t * 3.5) * 3.0
-        
-        # Rotate slightly and translate
-        rotated = base_avatar.rotate(tilt_angle, resample=Image.BICUBIC, expand=False)
-        frame = Image.new("RGBA", (w, h + 30), (0, 0, 0, 0))
-        paste_y = max(0, 15 + bob_offset_y)
-        frame.paste(rotated, (0, paste_y), rotated)
+        # ── Layer 1: Talking rhythm (fast bobbing like speaking) ──
+        talk_speed = 8.0  # ~4 Hz natural speech cadence
+        talk_bob = math.sin(t * talk_speed) * 8
+        # Add secondary faster micro-bob for realism
+        micro_bob = math.sin(t * 14.0) * 3
+
+        # ── Layer 2: Head tilt (like explaining/thinking) ──
+        # Slow natural head tilt side to side
+        tilt_angle = math.sin(t * 2.2) * 4.5
+        # Occasional bigger tilt as if making a point
+        emphasis_tilt = math.sin(t * 0.8) * 2.0
+        total_tilt = tilt_angle + emphasis_tilt
+
+        # ── Layer 3: Breathing (subtle scale pulse) ──
+        breathe_scale = 1.0 + math.sin(t * 2.5) * 0.015
+
+        # ── Layer 4: Emphasis bounce (every ~3 seconds, bigger movement) ──
+        # Creates natural "emphasis" moments like a real explainer
+        emphasis_cycle = t % 3.2
+        if emphasis_cycle < 0.3:
+            # Quick bounce up during emphasis
+            emphasis_bounce = -math.sin((emphasis_cycle / 0.3) * math.pi) * 18
+        else:
+            emphasis_bounce = 0
+
+        # ── Layer 5: Horizontal sway (hand gesture simulation) ──
+        # Slow drift left-right as if gesturing with hands
+        gesture_sway = math.sin(t * 1.5) * 10
+        # Quick gestural flicks
+        gesture_flick = math.sin(t * 5.5) * 3
+
+        # ── Layer 6: Lean-in effect (periodic scale up for dramatic moments) ──
+        lean_cycle = t % 5.0
+        if lean_cycle < 0.5:
+            lean_scale = 1.0 + (math.sin((lean_cycle / 0.5) * math.pi) * 0.06)
+        else:
+            lean_scale = 1.0
+
+        # ── Combine all layers ──
+        total_y_offset = int(talk_bob + micro_bob + emphasis_bounce)
+        total_x_offset = int(gesture_sway + gesture_flick)
+        total_scale = breathe_scale * lean_scale
+
+        # Apply scale
+        new_w = int(w * total_scale)
+        new_h = int(h * total_scale)
+        scaled = base_avatar.resize((new_w, new_h), Image.BICUBIC)
+
+        # Apply rotation (head tilt)
+        rotated = scaled.rotate(total_tilt, resample=Image.BICUBIC, expand=False)
+
+        # Create output frame with padding for movement
+        frame = Image.new("RGBA", (w + pad, h + pad), (0, 0, 0, 0))
+        paste_x = max(0, min(pad, (pad // 2) + total_x_offset + (w - new_w) // 2))
+        paste_y = max(0, min(pad, (pad // 2) + total_y_offset + (h - new_h) // 2))
+        frame.paste(rotated, (paste_x, paste_y), rotated)
         return frame
 
     elif animation_type == "breathe":
-        # Slow 1.5 Hz breathing cycle
-        scale_factor = 1.0 + (math.sin(t * 3.0) * 0.03)
+        # Gentle breathing with subtle head movement
+        scale_factor = 1.0 + (math.sin(t * 2.5) * 0.025)
+        gentle_tilt = math.sin(t * 1.2) * 2.0
+        gentle_bob = math.sin(t * 2.0) * 4
+
         new_w = int(w * scale_factor)
         new_h = int(h * scale_factor)
         resized = base_avatar.resize((new_w, new_h), Image.BICUBIC)
-        
-        frame = Image.new("RGBA", (w + 40, h + 40), (0, 0, 0, 0))
-        cx, cy = (w + 40) // 2, (h + 40) // 2
-        frame.paste(resized, (cx - new_w // 2, cy - new_h // 2), resized)
+        rotated = resized.rotate(gentle_tilt, resample=Image.BICUBIC, expand=False)
+
+        frame = Image.new("RGBA", (w + pad, h + pad), (0, 0, 0, 0))
+        cx, cy = (w + pad) // 2, (h + pad) // 2
+        paste_y = cy - new_h // 2 + int(gentle_bob)
+        frame.paste(rotated, (cx - new_w // 2, paste_y), rotated)
         return frame
 
     return base_avatar
