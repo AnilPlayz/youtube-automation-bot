@@ -10,16 +10,26 @@ from typing import Dict, Any, List, Optional, Tuple
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from moviepy.editor import (
-    VideoFileClip,
-    AudioFileClip,
-    CompositeAudioClip,
-    CompositeVideoClip,
-    ImageClip,
-    VideoClip,
-    ColorClip
-)
-from moviepy.video.fx.all import crop, resize
+try:
+    from moviepy.editor import (
+        VideoFileClip,
+        AudioFileClip,
+        CompositeAudioClip,
+        CompositeVideoClip,
+        ImageClip,
+        VideoClip,
+        ColorClip
+    )
+except ImportError:
+    from moviepy import (
+        VideoFileClip,
+        AudioFileClip,
+        CompositeAudioClip,
+        CompositeVideoClip,
+        ImageClip,
+        VideoClip,
+        ColorClip
+    )
 
 from src.config_loader import load_config, ASSETS_DIR
 from src.skin_renderer import get_player_avatar, generate_avatar_frame
