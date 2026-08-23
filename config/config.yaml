@@ -1,42 +1,35 @@
 # ==========================================
 # AI Minecraft Shorts Automation Configuration
-# Hindi Language Edition
+# 500 Script Library Edition
 # ==========================================
 
 channel:
   name: "Anil Playz"
   handle: "@Anil-Patel-29"
-  watermark_text: "@Anil-Patel-29" # Displayed on the video
-  watermark_opacity: 0.85          # 0.0 to 1.0
-  watermark_position: "top_right"  # "top_right", "top_left", "bottom_center", "bottom_right"
+  watermark_text: "@Anil-Patel-29"
+  watermark_opacity: 0.85
+  watermark_position: "top_right"
 
 player:
-  # Provide either a valid Java/Bedrock Minecraft username or place your skin.png in assets/skins/skin.png
-  minecraft_username: "Anil_playz29" # Your Minecraft username
+  minecraft_username: "Anil_playz29"
   skin_path: "assets/skins/custom_character.png"
-  render_type: "full_body"         # "isometric_bust", "2d_avatar", "full_body"
-  avatar_position: "bottom_left"   # "bottom_left", "bottom_right", "top_left"
-  avatar_scale: 0.28               # Relative size on screen (0.2 - 0.4 recommended)
-  avatar_animation: "talking_bob"  # "talking_bob", "breathe", "static"
+  render_type: "full_body"
+  avatar_position: "bottom_left"
+  avatar_scale: 0.28
+  avatar_animation: "talking_bob"
 
 voice:
-  # Hindi TTS voice: hi-IN-MadhurNeural (male energetic), hi-IN-SwaraNeural (female)
-  tts_voice: "hi-IN-MadhurNeural"
-  tts_rate: "+10%"                 # Speech rate (+8% to +12% works best for Hindi Shorts)
+  tts_voice: "en-US-ChristopherNeural"
+  tts_rate: "+12%"
   tts_pitch: "+0Hz"
 
 script:
-  # AI Model selection
-  model: "gemini-1.5-flash"        # "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"
-  language: "hindi"                # Script language
-  target_duration_seconds: 40      # 30 to 50 seconds for optimal Shorts retention
+  model: "gemini-1.5-flash"
+  target_duration_seconds: 40
   topic_types:
     - "hidden_mechanics"
     - "creepy_lore"
-    - "rare_world_generation"
-    - "historical_bugs_and_facts"
     - "mob_secrets"
-    - "underrated_crafting_tricks"
 
 video:
   width: 1080
@@ -44,30 +37,27 @@ video:
   fps: 30
   gameplay_dir: "assets/gameplay"
   music_dir: "assets/music"
-  music_volume: 0.12               # Background music volume (0.0 to 1.0)
-  duck_music_under_speech: true    # Automatically keep speech crisp
-  font_name: "NotoSansDevanagari-Bold"
+  music_volume: 0.12
+  duck_music_under_speech: true
 
 captions:
-  font_size: 68                    # Slightly smaller for Hindi text which is wider
-  primary_color: "#FFE600"         # Bright Shorts yellow
-  secondary_color: "#FFFFFF"       # Crisp white
-  highlight_color: "#00FF66"       # Neon green highlight on active spoken word
-  stroke_color: "#000000"          # Black outline
+  font_size: 72
+  primary_color: "#FFE600"
+  secondary_color: "#FFFFFF"
+  highlight_color: "#00FF66"
+  stroke_color: "#000000"
   stroke_width: 6
-  words_per_subtitle_chunk: 3      # 2-4 words per popup for viral TikTok/Shorts pacing
-  position_y_ratio: 0.62           # Slightly higher for Hindi text readability
+  words_per_subtitle_chunk: 3
+  position_y_ratio: 0.65
 
 youtube:
-  privacy_status: "public"         # "public", "unlisted", "private"
-  category_id: "20"                # 20 = Gaming
+  privacy_status: "public"
+  category_id: "20"
   default_tags:
     - "minecraft"
-    - "minecraft hindi"
     - "minecraft facts"
     - "minecraft shorts"
     - "gaming"
     - "minecraft secrets"
     - "shorts"
     - "viral"
-    - "hindi gaming"
