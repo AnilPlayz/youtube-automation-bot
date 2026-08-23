@@ -32,12 +32,11 @@ def get_authenticated_service():
         return None
 
     credentials = Credentials(
-        None,
+        token=None,
         refresh_token=refresh_token,
         token_uri="https://oauth2.googleapis.com/token",
         client_id=client_id,
-        client_secret=client_secret,
-        scopes=SCOPES
+        client_secret=client_secret
     )
 
     if not credentials.valid:

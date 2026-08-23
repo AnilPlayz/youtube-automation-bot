@@ -87,12 +87,7 @@ def save_used_topic(topic_title: str):
 def generate_script_with_gemini(api_key: str, model_name: str, used_topics: List[str], topic_type: str = "hidden_mechanics") -> Dict[str, Any]:
     """Generate a unique viral Minecraft script using Google Gemini API."""
     import google.generativeai as genai
-    genai.configure(api_key=api_key)
-
-    model = genai.GenerativeModel(
-        model_name=model_name,
-        system_instruction=DEFAULT_SYSTEM_PROMPT
-    )
+    genai.configure(api_key=api_key.strip())
 
     used_topics_summary = "\n".join(f"- {t}" for t in used_topics[-30:]) if used_topics else "None yet."
 
@@ -114,25 +109,39 @@ Respond ONLY with a JSON object in this exact schema (no markdown code blocks, r
 }}
 """
 
-    response = model.generate_content(
-        user_prompt,
-        generation_config={
-            "temperature": 0.85,
-            "top_p": 0.95,
-            "response_mime_type": "application/json"
-        }
-    )
+    # Try requested model first, then fallback model aliases
+    model_candidates = [model_name, "gemini-1.5-flash-latest", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+    last_err = None
 
-    text = response.text.strip()
-    if text.startswith("```json"):
-        text = text[7:]
-    if text.startswith("```"):
-        text = text[3:]
-    if text.endswith("```"):
-        text = text[:-3]
-    
-    data = json.loads(text.strip())
-    return data
+    for m_name in model_candidates:
+        try:
+            model = genai.GenerativeModel(
+                model_name=m_name,
+                system_instruction=DEFAULT_SYSTEM_PROMPT
+            )
+            response = model.generate_content(
+                user_prompt,
+                generation_config={
+                    "temperature": 0.85,
+                    "top_p": 0.95,
+                    "response_mime_type": "application/json"
+                }
+            )
+            text = response.text.strip()
+            if text.startswith("```json"):
+                text = text[7:]
+            if text.startswith("```"):
+                text = text[3:]
+            if text.endswith("```"):
+                text = text[:-3]
+            
+            data = json.loads(text.strip())
+            return data
+        except Exception as e:
+            last_err = e
+            continue
+
+    raise last_err or RuntimeError("Failed to generate script with Gemini API")
 
 def get_unique_script(force_topic: str = None) -> Dict[str, Any]:
     """Main interface to generate a fresh, unique script."""
