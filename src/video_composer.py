@@ -240,6 +240,17 @@ def create_watermark_image(text: str, opacity: float = 0.85) -> Image.Image:
 
     return badge
 
+def pil_to_image_clip(pil_img: Image.Image, duration: float = 1.0) -> ImageClip:
+    """Converts a PIL RGBA image to a MoviePy ImageClip with proper alpha transparency mask."""
+    arr = np.array(pil_img)
+    if arr.ndim == 3 and arr.shape[2] == 4:
+        rgb = arr[:, :, :3]
+        alpha = (arr[:, :, 3] / 255.0).astype(np.float32)
+        mask = ImageClip(alpha, ismask=True).set_duration(duration)
+        clip = ImageClip(rgb).set_duration(duration).set_mask(mask)
+        return clip
+    return ImageClip(arr).set_duration(duration)
+
 def create_full_short_video(
     voiceover_path: str,
     subtitle_chunks: List[Dict[str, Any]],
@@ -288,10 +299,9 @@ def create_full_short_video(
     video_layers = [bg_video]
 
     # 4. Watermark Layer
-    watermark_text = chan_cfg.get("watermark_text", "@MinecraftFacts")
+    watermark_text = chan_cfg.get("watermark_text", "@Anil-Patel-29")
     opacity = chan_cfg.get("watermark_opacity", 0.85)
     watermark_img = create_watermark_image(watermark_text, opacity)
-    watermark_np = np.array(watermark_img)
 
     pos_setting = chan_cfg.get("watermark_position", "top_right")
     if pos_setting == "top_left":
@@ -301,11 +311,11 @@ def create_full_short_video(
     else:  # top_right
         wm_pos = (width - watermark_img.width - 50, 100)
 
-    wm_clip = ImageClip(watermark_np).set_duration(total_duration).set_position(wm_pos)
+    wm_clip = pil_to_image_clip(watermark_img, total_duration).set_position(wm_pos)
     video_layers.append(wm_clip)
 
     # 5. Player Avatar Overlay Layer
-    avatar_username = custom_username or player_cfg.get("minecraft_username", "Steve")
+    avatar_username = custom_username or player_cfg.get("minecraft_username", "Anil_playz29")
     avatar_base_img = get_player_avatar(avatar_username)
 
     # Scale avatar to configured size
@@ -316,17 +326,32 @@ def create_full_short_video(
 
     anim_type = player_cfg.get("avatar_animation", "talking_bob")
 
-    def make_avatar_frame(t):
-        frame = generate_avatar_frame(avatar_resized, t, anim_type)
-        return np.array(frame)
-
     avatar_pos_cfg = player_cfg.get("avatar_position", "bottom_left")
     if avatar_pos_cfg == "bottom_right":
         avatar_xy = (width - avatar_w - 40, height - avatar_h - 180)
     else:  # bottom_left
         avatar_xy = (40, height - avatar_h - 180)
 
-    avatar_clip = VideoClip(make_avatar_frame, duration=total_duration).set_position(avatar_xy)
+    def make_avatar_rgb(t):
+        frame = generate_avatar_frame(avatar_resized, t, anim_type)
+        arr = np.array(frame)
+        if arr.ndim == 3 and arr.shape[2] == 4:
+            return arr[:, :, :3]
+        return arr
+
+    def make_avatar_mask(t):
+        frame = generate_avatar_frame(avatar_resized, t, anim_type)
+        arr = np.array(frame)
+        if arr.ndim == 3 and arr.shape[2] == 4:
+            return (arr[:, :, 3] / 255.0).astype(np.float32)
+        return np.ones((arr.shape[0], arr.shape[1]), dtype=np.float32)
+
+    avatar_mask = VideoClip(make_avatar_mask, duration=total_duration, ismask=True)
+    avatar_clip = (
+        VideoClip(make_avatar_rgb, duration=total_duration)
+        .set_mask(avatar_mask)
+        .set_position(avatar_xy)
+    )
     video_layers.append(avatar_clip)
 
     # 6. Subtitle Overlay Clips
@@ -339,12 +364,9 @@ def create_full_short_video(
 
         # Render subtitle image
         sub_img = render_subtitle_image(chunk["text"], width=width)
-        sub_np = np.array(sub_img)
-
         sub_clip = (
-            ImageClip(sub_np)
+            pil_to_image_clip(sub_img, c_duration)
             .set_start(c_start)
-            .set_duration(c_duration)
             .set_position(("center", sub_y))
         )
         video_layers.append(sub_clip)

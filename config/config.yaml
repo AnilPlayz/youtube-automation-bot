@@ -26,7 +26,7 @@ voice:
 
 script:
   # AI Model selection
-  model: "gemini-2.5-flash"        # "gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"
+  model: "gemini-1.5-flash"        # "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"
   target_duration_seconds: 40      # 30 to 50 seconds for optimal Shorts retention
   topic_types:
     - "hidden_mechanics"
