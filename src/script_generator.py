@@ -1,4 +1,4 @@
-"""AI Script Generator for Minecraft Facts YouTube Shorts.
+"""AI Script Generator for Hindi Minecraft Facts YouTube Shorts.
 Uses Google Gemini API and maintains history to ensure 100% unique scripts.
 """
 
@@ -12,54 +12,61 @@ from src.config_loader import load_config, get_gemini_api_key, DATA_DIR
 USED_TOPICS_FILE = DATA_DIR / "used_topics.json"
 
 DEFAULT_SYSTEM_PROMPT = """
-You are a viral YouTube Shorts creator and Minecraft expert specializing in mind-blowing, obscure, and fascinating Minecraft facts and trivia.
+You are a viral Hindi YouTube Shorts creator and Minecraft expert specializing in mind-blowing, obscure, and fascinating Minecraft facts and trivia.
 
-Your goal is to produce a high-retention 35-50 second script for a YouTube Short.
+Your goal is to produce a high-retention 35-50 second script for a YouTube Short entirely in HINDI (Devanagari script).
 
 RULES FOR VIRAL SHORTS SCRIPT:
-1. THE HOOK (First 3 seconds): Must start with an immediate, gripping statement or question that triggers curiosity. (e.g., "Mojang accidentally added this feature in 2011...", "Do NOT craft this item if you value your world...", "Only 0.1% of Minecraft players know about this secret mob interaction...").
-2. THE BODY (30 seconds): Fast-paced, concise explanation of the fact. Use conversational, excited, and punchy language. Avoid unnecessary filler words.
-3. THE TWIST / CLIMAX: An extra interesting detail or practical application of the fact.
-4. CALL TO ACTION (Final 3 seconds): Quick, natural CTA (e.g., "Subscribe if you learned something new!", "Did you already know this? Drop a comment!").
-5. SCRIPT LENGTH: Exactly 75 to 110 words total (approx 35 to 45 seconds when spoken at 1.1x speed).
-6. FORMAT: Output MUST be strictly valid JSON matching the requested schema. Do NOT include markdown ticks (```json).
+1. THE HOOK (First 3 seconds): Must start with an immediate, gripping statement or question in Hindi that triggers curiosity. (e.g., "क्या आपको पता है Minecraft में ये secret feature छुपा है...", "इस mob को कभी मत मारो वरना...", "सिर्फ 1% players को ये trick पता है...")
+2. THE BODY (30 seconds): Fast-paced, concise explanation in Hindi. Use exciting, conversational Hinglish-style language mixing Hindi sentences with Minecraft terms in English.
+3. THE TWIST / CLIMAX: An extra interesting detail or practical application.
+4. CALL TO ACTION (Final 3 seconds): Quick Hindi CTA (e.g., "Subscribe karo agar ye nahi pata tha!", "Comment karo agar ye pehle se pata tha!").
+5. SCRIPT LENGTH: Exactly 75 to 110 words total (approx 35 to 45 seconds when spoken).
+6. FORMAT: Output MUST be strictly valid JSON matching the requested schema. Do NOT include markdown ticks.
+7. IMPORTANT: The voiceover_script MUST be in Hindi (Devanagari script). Title and description can mix Hindi and English for SEO.
+8. Include a "topic_theme" field: one of "nether", "end", "overworld", "ocean", "cave", "mob", "redstone", "magic".
 """
 
 FALLBACK_FACTS = [
     {
-        "topic": "Creeper Cat Phobia Mystery",
-        "title": "Why Creepers Are TERRIFIED of Cats in Minecraft! #shorts",
-        "description": "Ever wondered why the most dangerous mob in Minecraft runs away from tiny cats? Here is the secret lore and mechanic behind Creepers! #minecraft #minecraftfacts #shorts",
-        "tags": ["minecraft", "creeper", "minecraft facts", "shorts", "gaming", "creeper cat"],
-        "voiceover_script": "Ever wonder why Creepers are terrified of tiny cats? In early Minecraft development, Notch wanted a natural defense against the most destructive mob. Cats can see invisible mobs and hiss at Creepers, forcing their AI to flee up to 16 blocks away! Even charged creepers will instantly sprint away in terror. Keep a pet cat near your chests to protect your diamonds. Subscribe for more crazy Minecraft secrets!"
+        "topic": "Creeper बिल्ली से डर",
+        "title": "Creeper बिल्लियों से क्यों डरते हैं? 😱🐱 #shorts #minecraft",
+        "description": "Minecraft में Creeper बिल्लियों से क्यों भागते हैं? जानो असली राज! #minecraft #minecraftfacts #shorts #hindi",
+        "tags": ["minecraft", "minecraft hindi", "minecraft facts", "shorts", "gaming", "creeper"],
+        "topic_theme": "overworld",
+        "voiceover_script": "क्या आपको पता है कि Minecraft का सबसे खतरनाक mob, Creeper, एक छोटी सी बिल्ली से डरता है? जब Notch ने game बनाया तो उन्होंने सोचा कि players को कोई natural defense चाहिए। बिल्लियाँ Creepers को 16 blocks दूर तक भगा सकती हैं! यहाँ तक कि Charged Creeper भी बिल्ली को देखकर भाग जाता है! अपने diamonds बचाने के लिए chest के पास बिल्ली रखो। Subscribe करो और ऐसे facts के लिए bell दबाओ!"
     },
     {
-        "topic": "Ghast Crying Sound Lore",
-        "title": "The DISTURBING Origin of Ghast Sounds in Minecraft! #shorts",
-        "description": "You won't believe how C418 created the terrifying Ghast noises in Minecraft! #minecraft #minecraftlore #shorts",
-        "tags": ["minecraft", "ghast", "minecraft lore", "c418", "shorts", "minecraft secrets"],
-        "voiceover_script": "The terrifying sound of a Ghast crying in the Nether isn't a monster at all. It's actually a sleeping cat! When C418 was designing the audio for the Nether update, his cat accidentally woke up from a nap and made a bizarre screeching whine. He recorded it, pitched it down, and reversed parts of it to create the most haunting sound in Minecraft. Subscribe if this blew your mind!"
+        "topic": "Ghast की रोने की आवाज़",
+        "title": "Ghast की डरावनी आवाज़ का SHOCKING सच! 😨👻 #shorts #minecraft",
+        "description": "Ghast की crying sound कैसे बनी? ये जानकर हैरान रह जाओगे! #minecraft #minecraftlore #shorts #hindi",
+        "tags": ["minecraft", "ghast", "minecraft lore", "shorts", "gaming", "hindi"],
+        "topic_theme": "nether",
+        "voiceover_script": "Nether में Ghast की वो डरावनी रोने की आवाज़ सुनी है? वो असल में एक बिल्ली की आवाज़ है! जब C418 Nether का audio design कर रहे थे, उनकी बिल्ली अचानक नींद से उठी और एक अजीब सी चीख मारी। उन्होंने उसे record किया, pitch down किया, और reverse किया। बस यही Minecraft की सबसे haunting sound बन गई! अगर ये fact उड़ा दिया तो subscribe ज़रूर करो!"
     },
     {
-        "topic": "Nether Bed Explosion Mechanic",
-        "title": "Why Beds EXPLODE in the Nether & The Secret Lore! #shorts",
-        "description": "Why do beds explode when you sleep in the Nether? Here is the game mechanic explained! #minecraft #shorts #gaming",
-        "tags": ["minecraft", "nether", "minecraft tips", "shorts", "gaming"],
-        "voiceover_script": "Why do beds explode when you try to sleep in the Nether? In Minecraft lore, the Nether has no day and night cycle, meaning time simply does not exist. When you attempt to set your spawn point, the game tries to calculate the current time coordinate, resulting in a dimensional paradox that triggers a massive explosion with an explosion power of five! That is stronger than TNT! Subscribe for more insane facts!"
+        "topic": "Nether में Bed विस्फोट",
+        "title": "Nether में Bed क्यों EXPLODE होता है? 💥🔥 #shorts #minecraft",
+        "description": "Nether में bed से सोने की कोशिश मत करो! जानो क्यों फटता है bed! #minecraft #shorts #gaming #hindi",
+        "tags": ["minecraft", "nether", "minecraft tips", "shorts", "gaming", "hindi"],
+        "topic_theme": "nether",
+        "voiceover_script": "Nether में bed पर सोने की कोशिश कभी मत करना! Minecraft lore के हिसाब से Nether में दिन और रात का cycle exist नहीं करता, मतलब time ही नहीं है वहाँ! जब तुम spawn point set करने की कोशिश करते हो, game time calculate करने लगता है और एक dimensional paradox trigger हो जाता है। धमाके की power 5 है, जो TNT से भी ज़्यादा है! Subscribe करो और ऐसे insane facts पाओ!"
     },
     {
-        "topic": "Shulker Color Easter Egg",
-        "title": "You Can DYE Shulkers in Minecraft?! (Secret Feature) #shorts",
-        "description": "Did you know you can change the color of living Shulkers in Minecraft? Here is how! #minecraft #minecraftshorts",
-        "tags": ["minecraft", "shulker", "minecraft easter eggs", "shorts", "gaming"],
-        "voiceover_script": "Did you know you can actually dye living Shulkers in Minecraft Bedrock edition? While Java players can only dye Shulker Boxes, Bedrock lets you use any dye on a wild Shulker to permanently change its shell color! Imagine building an entire rainbow defense army around your base. Subscribe for more secret features you didn't know!"
+        "topic": "Warden सबसे ताकतवर Mob",
+        "title": "Warden को DEFEAT करना लगभग IMPOSSIBLE है! 😰⚔️ #shorts #minecraft",
+        "description": "Minecraft का सबसे powerful mob Warden के बारे में shocking facts! #minecraft #shorts #warden #hindi",
+        "tags": ["minecraft", "warden", "minecraft mob", "shorts", "gaming", "hindi"],
+        "topic_theme": "cave",
+        "voiceover_script": "Minecraft का सबसे ताकतवर mob Warden है और इसे मारना almost impossible है! इसकी health 500 है, जो Ender Dragon से भी ज़्यादा है! ये अंधा है लेकिन vibrations से तुम्हें track करता है। इसका sonic boom attack shields को भी bypass कर देता है! और सबसे डरावनी बात? अगर तुम invisible हो तो भी ये तुम्हें smell करके ढूंढ लेगा! Comment करो अगर तुमने Warden को कभी हराया है!"
     },
     {
-        "topic": "Skeleton Stray Transformation",
-        "title": "The Secret Way Skeletons Become Strays! #shorts",
-        "description": "How regular skeletons turn into Strays in powdered snow! #minecraft #minecraftsecrets #shorts",
-        "tags": ["minecraft", "skeleton", "minecraft update", "shorts", "gaming"],
-        "voiceover_script": "If you leave a regular Skeleton trapped inside powdered snow for just 7 seconds, something crazy happens. It begins to shake violently and transforms into a Stray, gaining slowness tipped arrows and an icy cloak! This means you can build an infinite tipped arrow farm using just a skeleton spawner and snow buckets. Subscribe for more top-tier Minecraft tricks!"
+        "topic": "End City का Elytra राज़",
+        "title": "Elytra कैसे मिलता है? End City का HIDDEN Secret! 🪽✨ #shorts #minecraft",
+        "description": "End City में Elytra ढूंढने का secret तरीका! #minecraft #shorts #elytra #hindi",
+        "tags": ["minecraft", "elytra", "end city", "shorts", "gaming", "hindi"],
+        "topic_theme": "end",
+        "voiceover_script": "Elytra Minecraft का सबसे rare और powerful item है! ये सिर्फ End City के ships में मिलता है। लेकिन क्या पता है कि हर End City में ship नहीं होता? सिर्फ 56 percent cities में ship generate होता है! और Elytra को repair करने के लिए Phantom Membrane चाहिए, जो सिर्फ तभी मिलती है जब तुम 3 दिन तक ना सोओ! Subscribe करो gaming tips के लिए!"
     }
 ]
 
@@ -82,17 +89,17 @@ def save_used_topic(topic_title: str):
     if topic_title not in topics:
         topics.append(topic_title)
         with open(USED_TOPICS_FILE, "w", encoding="utf-8") as f:
-            json.dump(topics, f, indent=2)
+            json.dump(topics, f, indent=2, ensure_ascii=False)
 
 def generate_script_with_gemini(api_key: str, model_name: str, used_topics: List[str], topic_type: str = "hidden_mechanics") -> Dict[str, Any]:
-    """Generate a unique viral Minecraft script using Google Gemini API."""
+    """Generate a unique viral Hindi Minecraft script using Google Gemini API."""
     import google.generativeai as genai
     genai.configure(api_key=api_key.strip())
 
     used_topics_summary = "\n".join(f"- {t}" for t in used_topics[-30:]) if used_topics else "None yet."
 
     user_prompt = f"""
-Generate a brand new, highly engaging, 100% unique Minecraft Fact script for YouTube Shorts.
+Generate a brand new, highly engaging, 100% unique Minecraft Fact script for YouTube Shorts IN HINDI (Devanagari script).
 
 CATEGORY FOCUS: {topic_type.replace('_', ' ').title()}
 
@@ -101,11 +108,12 @@ CRITICAL CONSTRAINT: Do NOT repeat or closely mirror any of these previously cov
 
 Respond ONLY with a JSON object in this exact schema (no markdown code blocks, raw JSON only):
 {{
-  "topic": "Short 3-5 word topic name",
-  "title": "Clicky & Viral YouTube Short Title with #shorts",
-  "description": "Short SEO description with 3-5 hashtags including #shorts #minecraft",
-  "tags": ["minecraft", "minecraft facts", "shorts", "gaming", "tag5", "tag6"],
-  "voiceover_script": "The spoken voiceover script text (75 to 110 words total)."
+  "topic": "Short 3-5 word topic name (Hindi or mix)",
+  "title": "Viral YouTube Short Title mixing Hindi + English with #shorts",
+  "description": "Short SEO description with 3-5 hashtags including #shorts #minecraft #hindi",
+  "tags": ["minecraft", "minecraft hindi", "minecraft facts", "shorts", "gaming", "tag6"],
+  "topic_theme": "one of: nether, end, overworld, ocean, cave, mob, redstone, magic",
+  "voiceover_script": "The spoken voiceover script text IN HINDI (Devanagari) (75 to 110 words total)."
 }}
 """
 
@@ -136,6 +144,9 @@ Respond ONLY with a JSON object in this exact schema (no markdown code blocks, r
                 text = text[:-3]
             
             data = json.loads(text.strip())
+            # Ensure topic_theme exists
+            if "topic_theme" not in data:
+                data["topic_theme"] = random.choice(["nether", "end", "overworld", "ocean", "cave", "mob", "redstone", "magic"])
             return data
         except Exception as e:
             last_err = e
@@ -175,6 +186,10 @@ def get_unique_script(force_topic: str = None) -> Dict[str, Any]:
     if force_topic:
         script_data["topic"] = force_topic
 
+    # Ensure topic_theme exists
+    if "topic_theme" not in script_data:
+        script_data["topic_theme"] = random.choice(["nether", "end", "overworld", "ocean", "cave", "mob", "redstone", "magic"])
+
     # Save to used topics
     save_used_topic(script_data["topic"])
     return script_data
@@ -182,4 +197,4 @@ def get_unique_script(force_topic: str = None) -> Dict[str, Any]:
 if __name__ == "__main__":
     result = get_unique_script()
     print("\n--- GENERATED SCRIPT ---")
-    print(json.dumps(result, indent=2))
+    print(json.dumps(result, indent=2, ensure_ascii=False))

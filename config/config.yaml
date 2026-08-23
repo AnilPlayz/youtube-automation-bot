@@ -1,5 +1,6 @@
 # ==========================================
 # AI Minecraft Shorts Automation Configuration
+# Hindi Language Edition
 # ==========================================
 
 channel:
@@ -19,14 +20,15 @@ player:
   avatar_animation: "talking_bob"  # "talking_bob", "breathe", "static"
 
 voice:
-  # Edge-TTS voice list: en-US-ChristopherNeural (male energetic), en-US-GuyNeural, en-US-EricNeural, en-US-JennyNeural (female)
-  tts_voice: "en-US-ChristopherNeural"
-  tts_rate: "+12%"                 # Speech rate (+10% to +15% works best for Shorts)
+  # Hindi TTS voice: hi-IN-MadhurNeural (male energetic), hi-IN-SwaraNeural (female)
+  tts_voice: "hi-IN-MadhurNeural"
+  tts_rate: "+10%"                 # Speech rate (+8% to +12% works best for Hindi Shorts)
   tts_pitch: "+0Hz"
 
 script:
   # AI Model selection
   model: "gemini-1.5-flash"        # "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"
+  language: "hindi"                # Script language
   target_duration_seconds: 40      # 30 to 50 seconds for optimal Shorts retention
   topic_types:
     - "hidden_mechanics"
@@ -44,26 +46,28 @@ video:
   music_dir: "assets/music"
   music_volume: 0.12               # Background music volume (0.0 to 1.0)
   duck_music_under_speech: true    # Automatically keep speech crisp
-  font_name: "Arial-Bold"          # System font or path to .ttf in assets/fonts/
+  font_name: "NotoSansDevanagari-Bold"
 
 captions:
-  font_size: 72
+  font_size: 68                    # Slightly smaller for Hindi text which is wider
   primary_color: "#FFE600"         # Bright Shorts yellow
   secondary_color: "#FFFFFF"       # Crisp white
   highlight_color: "#00FF66"       # Neon green highlight on active spoken word
   stroke_color: "#000000"          # Black outline
   stroke_width: 6
   words_per_subtitle_chunk: 3      # 2-4 words per popup for viral TikTok/Shorts pacing
-  position_y_ratio: 0.65           # 0.65 = slightly below center, clear of YouTube UI overlay
+  position_y_ratio: 0.62           # Slightly higher for Hindi text readability
 
 youtube:
   privacy_status: "public"         # "public", "unlisted", "private"
   category_id: "20"                # 20 = Gaming
   default_tags:
     - "minecraft"
+    - "minecraft hindi"
     - "minecraft facts"
     - "minecraft shorts"
     - "gaming"
     - "minecraft secrets"
     - "shorts"
     - "viral"
+    - "hindi gaming"

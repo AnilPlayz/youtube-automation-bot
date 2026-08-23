@@ -48,11 +48,13 @@ def run_pipeline(
     # 3. Assemble Video
     print("\n[Step 3/4] Compositing 9:16 Short (gameplay + subtitles + watermark + player avatar)...")
     video_output_path = str(OUTPUT_DIR / f"minecraft_short_{timestamp}.mp4")
+    topic_theme = script_data.get("topic_theme", "overworld")
     final_video = create_full_short_video(
         voiceover_path=audio_file,
         subtitle_chunks=sub_chunks,
         output_mp4_path=video_output_path,
-        custom_username=custom_username
+        custom_username=custom_username,
+        topic_theme=topic_theme
     )
     print(f"  • Rendered Video: {final_video}")
 
