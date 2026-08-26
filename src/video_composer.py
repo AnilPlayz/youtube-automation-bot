@@ -241,6 +241,68 @@ def create_evolving_backdrop(duration: float, theme: dict, width: int = 1080, he
     return VideoClip(make_frame, duration=duration).set_fps(30)
 
 
+def load_background_video(
+    duration: float,
+    topic_theme: str = "overworld",
+    width: int = 1080,
+    height: int = 1920
+) -> VideoClip:
+    """
+    Loads gameplay footage from assets/gameplay if available and crops it to 9:16 vertical.
+    If no gameplay videos exist or if loading fails, falls back to the procedural
+    evolving animated backdrop matching the topic theme.
+    """
+    ensure_assets_dirs()
+    video_extensions = ["*.mp4", "*.mov", "*.mkv", "*.webm", "*.avi"]
+    video_files = []
+    for ext in video_extensions:
+        video_files.extend(list(GAMEPLAY_DIR.glob(ext)))
+
+    theme = get_theme(topic_theme)
+
+    if not video_files:
+        print("[Video Composer] No gameplay videos found in assets/gameplay. Using evolving animated backdrop.")
+        return create_evolving_backdrop(duration, theme, width, height)
+
+    chosen_video_path = random.choice(video_files)
+    print(f"[Video Composer] Using gameplay background clip: {chosen_video_path.name}")
+
+    try:
+        clip = VideoFileClip(str(chosen_video_path))
+        if clip.duration <= duration:
+            # Loop if clip is shorter than short duration
+            clip = clip.loop(duration=duration)
+        else:
+            # Pick a random starting offset for variety
+            max_start = max(0.0, clip.duration - duration - 0.5)
+            start_t = random.uniform(0.0, max_start)
+            clip = clip.subclip(start_t, start_t + duration)
+
+        clip_w, clip_h = clip.size
+        target_aspect = width / height
+        clip_aspect = clip_w / clip_h
+
+        # Crop and resize to fill 9:16 (width x height) without black bars
+        if clip_aspect > target_aspect:
+            # Video is wider than 9:16 -> scale height, crop center width
+            clip = clip.resize(height=height)
+            new_w, new_h = clip.size
+            x_center = new_w / 2
+            clip = clip.crop(x1=x_center - width / 2, x2=x_center + width / 2, y1=0, y2=height)
+        else:
+            # Video is taller or same -> scale width, crop center height
+            clip = clip.resize(width=width)
+            new_w, new_h = clip.size
+            y_center = new_h / 2
+            clip = clip.crop(x1=0, x2=width, y1=y_center - height / 2, y2=y_center + height / 2)
+
+        return clip.set_duration(duration)
+
+    except Exception as e:
+        print(f"[Video Composer] Warning: Could not load gameplay video ({e}). Falling back to evolving backdrop.")
+        return create_evolving_backdrop(duration, theme, width, height)
+
+
 def render_caption_frame(
     chunk_text: str,
     t_in_chunk: float,
@@ -415,8 +477,8 @@ def create_full_short_video(
 
     final_audio = CompositeAudioClip(audio_tracks).set_duration(total_duration)
 
-    # 2. Evolving background (NOT looped)
-    bg_video = create_evolving_backdrop(total_duration, theme, width, height)
+    # 2. Background video (Gameplay video from assets/gameplay or evolving backdrop)
+    bg_video = load_background_video(total_duration, topic_theme, width, height)
     video_layers = [bg_video]
 
     # 3. Captions BEHIND character (added BEFORE avatar layer)
