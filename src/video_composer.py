@@ -11,6 +11,11 @@ from typing import Dict, Any, List, Optional, Tuple
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
+# Fix Pillow 10+ compatibility with moviepy 1.0.3
+# moviepy uses Image.ANTIALIAS which was removed in Pillow 10+
+if not hasattr(Image, "ANTIALIAS"):
+    Image.ANTIALIAS = Image.LANCZOS
+
 try:
     from moviepy.editor import (
         VideoFileClip,
