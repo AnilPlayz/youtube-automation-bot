@@ -11,11 +11,16 @@ __pycache__/
 venv/
 ENV/
 
-# Media build outputs
+# Media build outputs (output/ directory only)
 output/
-*.mp4
-*.mp3
-*.wav
+
+# Large downloaded gameplay files (auto-downloaded in CI)
+assets/gameplay/*.mp4
+assets/gameplay/*.mkv
+assets/gameplay/*.webm
+assets/gameplay/*.avi
+assets/gameplay/*.mov
+assets/gameplay/_raw_*
 
 # IDE
 .vscode/

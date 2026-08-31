@@ -18,3 +18,6 @@ google-api-python-client>=2.125.0
 # Media Helpers
 proglog>=0.1.10
 aiohttp>=3.9.0
+
+# Background Gameplay Downloader
+yt-dlp>=2024.1.0

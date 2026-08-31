@@ -11,6 +11,7 @@ from src.script_generator import get_unique_script
 from src.tts_engine import generate_voiceover
 from src.video_composer import create_full_short_video
 from src.youtube_uploader import upload_short_to_youtube
+from scripts.download_background import ensure_gameplay_background
 
 OUTPUT_DIR = BASE_DIR / "output"
 
@@ -27,6 +28,14 @@ def run_pipeline(
     print("=" * 65)
     print(" 🚀 STARTING AI MINECRAFT FACTS SHORTS AUTOMATION PIPELINE")
     print("=" * 65)
+
+    # 0. Ensure gameplay background footage is available
+    print("\n[Step 0/4] Ensuring Minecraft gameplay background footage...")
+    bg_ready = ensure_gameplay_background()
+    if bg_ready:
+        print("  • ✅ Gameplay background ready")
+    else:
+        print("  • ⚠️ No gameplay footage available — will use animated backdrop")
 
     # 1. Generate Unique Script
     print("\n[Step 1/4] Generating unique viral Minecraft fact script...")

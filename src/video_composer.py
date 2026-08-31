@@ -129,6 +129,42 @@ def get_font(size: int = 70) -> ImageFont.ImageFont:
     return ImageFont.load_default()
 
 
+def get_ascii_font(size: int = 36) -> ImageFont.ImageFont:
+    """Load a font that reliably renders ASCII characters (for watermark etc)."""
+    # Prioritize fonts known to handle ASCII well
+    ascii_candidates = [
+        # System fonts (ASCII-safe)
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf",
+        "/usr/share/fonts/truetype/ubuntu/Ubuntu-Bold.ttf",
+        "C:\\Windows\\Fonts\\arialbd.ttf",
+        "C:\\Windows\\Fonts\\segoeui.ttf",
+        "C:\\Windows\\Fonts\\calibrib.ttf",
+        "/Library/Fonts/Arial Bold.ttf",
+    ]
+    # Also check user's custom fonts
+    for ext in ["*.ttf", "*.otf"]:
+        for font_file in FONTS_DIR.glob(ext):
+            try:
+                f = ImageFont.truetype(str(font_file), size)
+                f.getbbox("@Anil-Patel-29")
+                return f
+            except Exception:
+                pass
+
+    for c in ascii_candidates:
+        try:
+            f = ImageFont.truetype(c, size)
+            # Verify it can render ASCII properly
+            f.getbbox("@Anil-Patel-29")
+            return f
+        except Exception:
+            continue
+    return ImageFont.load_default()
+
+
 def create_evolving_backdrop(duration: float, theme: dict, width: int = 1080, height: int = 1920) -> VideoClip:
     """
     Creates a non-looping, continuously evolving animated background.
@@ -399,7 +435,7 @@ def render_caption_frame(
 
 def create_watermark_image(text: str, opacity: float = 0.85) -> Image.Image:
     """Creates a sleek glassmorphism pill watermark badge."""
-    font = get_font(36)
+    font = get_ascii_font(36)
     dummy_draw = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
     bbox = dummy_draw.textbbox((0, 0), text, font=font)
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]

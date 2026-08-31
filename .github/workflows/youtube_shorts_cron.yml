@@ -57,12 +57,19 @@ jobs:
       - name: Install Hindi fonts
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq fonts-noto-core fonts-noto-extra fonts-freefont-ttf
+          sudo apt-get install -y -qq fonts-noto-core fonts-noto-extra fonts-freefont-ttf fonts-dejavu-core
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Download gameplay background
+        env:
+          GAMEPLAY_SOURCE_URL: ${{ vars.GAMEPLAY_SOURCE_URL || 'https://youtu.be/OqPxaKs8xrk' }}
+        run: |
+          echo "Downloading and transforming gameplay footage..."
+          python scripts/download_background.py || echo "⚠️ Gameplay download failed — will use animated backdrop"
 
       - name: Run Video Generation & YouTube Upload
         env:
