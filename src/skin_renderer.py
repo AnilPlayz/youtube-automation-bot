@@ -98,7 +98,7 @@ def create_default_steve_skin(output_path: Path):
 def render_isometric_cube(face_front: Image.Image, face_top: Image.Image, face_side: Image.Image, size: int = 400) -> Image.Image:
     """
     Software 3D Isometric Cube Renderer (Offline / Fallback).
-    Renders Minecraft isometric head directly from 2D pixel textures.
+    Renders Minecraft isometric head with front, top, and side faces visible.
     """
     out_img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     
@@ -108,27 +108,60 @@ def render_isometric_cube(face_front: Image.Image, face_top: Image.Image, face_s
     f_top = face_top.resize((res, res), Image.NEAREST)
     f_side = face_side.resize((res, res), Image.NEAREST)
 
-    # Apply lighting shading
+    # Apply lighting shading (only to RGB channels, preserve alpha)
+    def apply_brightness(img, factor):
+        r, g, b, a = img.split()
+        r = r.point(lambda p: int(p * factor))
+        g = g.point(lambda p: int(p * factor))
+        b = b.point(lambda p: int(p * factor))
+        return Image.merge("RGBA", (r, g, b, a))
+
     # Top face: full bright
     # Front face: slightly dimmed
-    f_front = Image.eval(f_front, lambda p: int(p * 0.85))
+    f_front = apply_brightness(f_front, 0.85)
     # Side face: darker for 3D depth
-    f_side = Image.eval(f_side, lambda p: int(p * 0.65))
+    f_side = apply_brightness(f_side, 0.65)
 
-    # Affine transform matrices for isometric projection:
-    # 30 degree isometric angle
     cx, cy = size // 2, size // 2
-    w = int(res * 1.4)
-    h = int(res * 0.8)
 
-    # Simplified clean 2.5D composite:
+    # Simplified clean 2.5D composite with all three faces:
     draw = ImageDraw.Draw(out_img)
     # Add subtle soft shadow under player
     draw.ellipse([cx - 140, cy + 120, cx + 140, cy + 190], fill=(0, 0, 0, 90))
 
-    # Paste front enlarged with rounded frame / clean border
-    face_large = f_front.resize((int(size * 0.65), int(size * 0.65)), Image.NEAREST)
-    out_img.paste(face_large, (cx - face_large.width // 2, cy - face_large.height // 2), face_large)
+    # Calculate face dimensions for isometric layout
+    face_w = int(size * 0.45)
+    face_h = int(size * 0.45)
+    top_h = int(size * 0.2)
+
+    # Position the three faces to create isometric effect
+    # Front face: bottom-left
+    front_x = cx - face_w // 2 - int(size * 0.05)
+    front_y = cy - face_h // 4
+    face_front_large = f_front.resize((face_w, face_h), Image.NEAREST)
+    out_img.paste(face_front_large, (front_x, front_y), face_front_large)
+
+    # Top face: above front face, offset right
+    top_x = front_x + int(face_w * 0.3)
+    top_y = front_y - top_h + int(face_h * 0.1)
+    face_top_large = f_top.resize((face_w, top_h), Image.NEAREST)
+    # Apply perspective skew for top face
+    face_top_skewed = face_top_large.transform(
+        face_top_large.size, Image.AFFINE,
+        (1, 0.3, 0, 0, 1, 0), resample=Image.NEAREST
+    )
+    out_img.paste(face_top_skewed, (top_x, top_y), face_top_skewed)
+
+    # Side face: right of front face
+    side_x = front_x + face_w - int(face_w * 0.1)
+    side_y = front_y + int(face_h * 0.05)
+    face_side_large = f_side.resize((int(face_w * 0.5), face_h), Image.NEAREST)
+    # Apply perspective skew for side face
+    face_side_skewed = face_side_large.transform(
+        face_side_large.size, Image.AFFINE,
+        (0.7, 0, 0, 0, 1, 0), resample=Image.NEAREST
+    )
+    out_img.paste(face_side_skewed, (side_x, side_y), face_side_skewed)
 
     return out_img
 
@@ -203,7 +236,8 @@ def get_player_avatar(custom_username: Optional[str] = None) -> Image.Image:
     cached_render = SKINS_DIR / f"{username}_{render_type}.png"
     if cached_render.exists():
         try:
-            return Image.open(cached_render).convert("RGBA")
+            img = Image.open(cached_render).convert("RGBA")
+            return add_glow_and_border(img)
         except Exception:
             pass
 

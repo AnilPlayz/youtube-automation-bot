@@ -132,15 +132,6 @@ def download_from_direct_urls(output_path: Path) -> bool:
 def generate_procedural_video(output_path: Path, duration: int = 60) -> bool:
     """Generate a dark animated background video using FFmpeg as ultimate fallback."""
     try:
-        # Generate a dark, animated gradient background with particles effect
-        # This creates a visually appealing dark gaming-style background
-        filter_chain = (
-            "color=c=0x0a0a1a:s=1080x1920:d={dur},"
-            "geq=r='clip(r(X,Y)+20*sin(2*PI*T/5+X/100),0,30)'"
-            ":g='clip(g(X,Y)+10*sin(2*PI*T/3+Y/150),0,20)'"
-            ":b='clip(b(X,Y)+40*sin(2*PI*T/4+X/80+Y/120),10,60)'"
-        ).format(dur=duration)
-
         cmd = [
             "ffmpeg", "-y",
             "-f", "lavfi",
