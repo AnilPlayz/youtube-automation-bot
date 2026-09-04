@@ -13,6 +13,7 @@ ENV/
 
 # Media build outputs (output/ directory only)
 output/
+*TEMP_MPY_*.mp4
 
 # Large downloaded gameplay files (auto-downloaded in CI)
 assets/gameplay/*.mp4
