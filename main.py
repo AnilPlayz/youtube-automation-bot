@@ -68,10 +68,12 @@ def run_pipeline(
     print(f"  • Rendered Video: {final_video}")
 
     # 4. Upload to YouTube
+    upload_success = False
     if dry_run:
         print("\n[Step 4/4] ⚠️ DRY-RUN MODE: Skipping YouTube upload.")
         print(f"  • Video file ready at: {final_video}")
         video_id = "DRY_RUN_LOCAL"
+        upload_success = True
     else:
         print("\n[Step 4/4] Publishing Short to YouTube...")
         video_id = upload_short_to_youtube(
@@ -81,15 +83,21 @@ def run_pipeline(
             tags=script_data.get("tags", []),
             privacy_status=privacy
         )
+        upload_success = video_id is not None
 
     elapsed = time.time() - start_time
     print("\n" + "=" * 65)
     print(f" ✨ PIPELINE FINISHED IN {elapsed:.1f} SECONDS")
-    if video_id and video_id != "DRY_RUN_LOCAL":
+    if upload_success and video_id and video_id != "DRY_RUN_LOCAL":
         print(f" 📺 Published Short URL: https://youtube.com/shorts/{video_id}")
+    elif not dry_run and not upload_success:
+        print(f" ❌ UPLOAD FAILED — Video saved locally at: {final_video}")
     else:
         print(f" 📁 Local output: {final_video}")
     print("=" * 65)
+
+    if not dry_run and not upload_success:
+        sys.exit(1)
 
 def main():
     parser = argparse.ArgumentParser(description="AI Minecraft Facts YouTube Shorts Automation")

@@ -72,6 +72,7 @@ jobs:
           python scripts/download_background.py || echo "⚠️ Gameplay download failed — will use animated backdrop"
 
       - name: Run Video Generation & YouTube Upload
+        id: pipeline
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
@@ -95,7 +96,7 @@ jobs:
           python main.py $FLAGS
 
       - name: Commit and push topic history
-        if: always()
+        if: success() || failure()
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"

@@ -1,5 +1,6 @@
 """YouTube Data API v3 Uploader for automated headless YouTube Shorts publishing."""
 
+import json
 import os
 import time
 from pathlib import Path
@@ -55,6 +56,14 @@ def upload_short_to_youtube(
     Uploads MP4 video to YouTube as a Short.
     Returns the YouTube video ID if successful.
     """
+    # Verify video file exists before attempting upload
+    if not os.path.isfile(video_path):
+        print(f"[YouTube Uploader] ERROR: Video file not found: {video_path}")
+        return None
+
+    file_size_mb = os.path.getsize(video_path) / (1024 * 1024)
+    print(f"[YouTube Uploader] Video file: {video_path} ({file_size_mb:.1f} MB)")
+
     config = load_config()
     yt_cfg = config.get("youtube", {})
     privacy = privacy_status or yt_cfg.get("privacy_status", "public")
@@ -72,7 +81,7 @@ def upload_short_to_youtube(
 
     service = get_authenticated_service()
     if not service:
-        print("[YouTube Uploader] Skipping upload: No valid YouTube API credentials found in environment.")
+        print("[YouTube Uploader] ERROR: Failed to authenticate with YouTube API. Check YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, and YOUTUBE_REFRESH_TOKEN.")
         return None
 
     print(f"[YouTube Uploader] Uploading '{title}' ({privacy})...")
@@ -113,20 +122,41 @@ def upload_short_to_youtube(
             if status:
                 print(f"[YouTube Uploader] Upload progress: {int(status.progress() * 100)}%")
         except HttpError as e:
-            if e.resp.status in [500, 502, 503, 504] and retry_count < max_retries:
+            error_reason = ""
+            try:
+                error_content = e.content.decode("utf-8") if isinstance(e.content, bytes) else str(e.content)
+                error_data = json.loads(error_content)
+                error_reason = error_data.get("error", {}).get("message", str(e))
+            except Exception:
+                error_reason = str(e)
+
+            if e.resp.status == 403:
+                print(f"[YouTube Uploader] ERROR: YouTube API quota exceeded or access denied: {error_reason}")
+                print("[YouTube Uploader] Quota resets at midnight Pacific Time. Try again tomorrow.")
+                return None
+            elif e.resp.status == 401:
+                print(f"[YouTube Uploader] ERROR: Authentication failed (token expired/revoked): {error_reason}")
+                print("[YouTube Uploader] Regenerate OAuth tokens using Get-YouTubeToken.ps1")
+                return None
+            elif e.resp.status in [500, 502, 503, 504] and retry_count < max_retries:
                 retry_count += 1
                 wait_time = 2 ** retry_count
-                print(f"[YouTube Uploader] Temporary server error. Retrying in {wait_time}s...")
+                print(f"[YouTube Uploader] Server error ({e.resp.status}). Retrying in {wait_time}s... (attempt {retry_count}/{max_retries})")
                 time.sleep(wait_time)
             else:
-                raise e
+                print(f"[YouTube Uploader] ERROR: YouTube API error ({e.resp.status}): {error_reason}")
+                return None
 
     if response and "id" in response:
         video_id = response["id"]
+        if not video_id or not isinstance(video_id, str) or len(video_id) < 5:
+            print(f"[YouTube Uploader] ERROR: Invalid video ID in response: {video_id}")
+            return None
         short_url = f"https://youtube.com/shorts/{video_id}"
         print(f"[YouTube Uploader] Successfully published Short: {short_url}")
         return video_id
 
+    print(f"[YouTube Uploader] ERROR: Upload completed but no video ID in response: {response}")
     return None
 
 if __name__ == "__main__":
