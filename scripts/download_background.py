@@ -79,7 +79,8 @@ def download_from_pexels(output_path: Path, query: str = "minecraft game") -> bo
                             return True
                         else:
                             output_path.unlink(missing_ok=True)
-                except Exception:
+                except Exception as e:
+                    print(f"[Background Downloader] Pexels video download failed: {e}")
                     continue
         except Exception as e:
             print(f"[Background Downloader] Pexels search '{search_q}' failed: {e}")
@@ -123,7 +124,7 @@ def download_from_direct_urls(output_path: Path) -> bool:
                     else:
                         output_path.unlink(missing_ok=True)
         except Exception as e:
-            print(f"[Background Downloader] Direct download failed: {e}")
+            print(f"[Background Downloader] Direct download failed for {url[:50]}: {e}")
             continue
 
     return False
@@ -227,7 +228,8 @@ def transform_video(input_path: Path, output_path: Path,
             subprocess.run(simple_cmd, check=True, timeout=600,
                            capture_output=True, text=True)
             return output_path.exists() and output_path.stat().st_size > 10_000
-        except Exception:
+        except Exception as e:
+            print(f"[Background Downloader] FFmpeg simple fallback also failed: {e}")
             return False
 
 

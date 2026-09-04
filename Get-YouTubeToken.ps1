@@ -6,7 +6,7 @@ $ClientSecret = $env:YOUTUBE_CLIENT_SECRET
 if (-not $ClientId) { $ClientId = Read-Host "Enter OAuth Client ID" }
 if (-not $ClientSecret) { $ClientSecret = Read-Host "Enter OAuth Client Secret" }
 $RedirectUri = "http://localhost:8080/"
-$Scope = "https://www.googleapis.com/auth/youtube.upload"
+$Scope = "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube"
 
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "   YOUTUBE 1-CLICK AUTOMATIC TOKEN GENERATOR" -ForegroundColor Cyan
@@ -25,8 +25,9 @@ try {
     exit
 }
 
-$AuthUrl = "https://accounts.google.com/o/oauth2/v2/auth?client_id=$ClientId&redirect_uri=[System.Web.HttpUtility]::UrlEncode($RedirectUri)&response_type=code&scope=[System.Web.HttpUtility]::UrlEncode($Scope)&access_type=offline&prompt=consent&login_hint=unknown726boy@gmail.com"
-$AuthUrl = "https://accounts.google.com/o/oauth2/v2/auth?client_id=$ClientId&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2F&response_type=code&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube.upload&access_type=offline&prompt=consent&login_hint=unknown726boy@gmail.com"
+$EncodedRedirectUri = [System.Uri]::EscapeDataString($RedirectUri)
+$EncodedScope = [System.Uri]::EscapeDataString($Scope)
+$AuthUrl = "https://accounts.google.com/o/oauth2/v2/auth?client_id=$ClientId&redirect_uri=$EncodedRedirectUri&response_type=code&scope=$EncodedScope&access_type=offline&prompt=consent"
 
 Write-Host "Opening your browser for authorization..." -ForegroundColor Green
 Start-Process $AuthUrl

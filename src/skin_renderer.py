@@ -70,7 +70,8 @@ def download_3d_avatar(username: str, render_type: str = "isometric_bust", outpu
                 with open(output_path, "wb") as f:
                     f.write(resp.content)
                 return output_path
-        except Exception:
+        except Exception as e:
+            print(f"[Skin Fetcher] API request failed for {url}: {e}")
             continue
 
     return None
@@ -238,8 +239,8 @@ def get_player_avatar(custom_username: Optional[str] = None) -> Image.Image:
         try:
             img = Image.open(cached_render).convert("RGBA")
             return add_glow_and_border(img)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[Skin Renderer] Cached render load error: {e}")
 
     downloaded_path = download_3d_avatar(username, render_type, cached_render)
     if downloaded_path and downloaded_path.exists():
@@ -247,8 +248,8 @@ def get_player_avatar(custom_username: Optional[str] = None) -> Image.Image:
             img = Image.open(downloaded_path).convert("RGBA")
             img = add_glow_and_border(img)
             return img
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[Skin Renderer] Downloaded render load error: {e}")
 
     # 4. Create Steve fallback
     create_default_steve_skin(DEFAULT_SKIN_PATH)

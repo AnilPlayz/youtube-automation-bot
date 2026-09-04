@@ -20,7 +20,7 @@ if not exist ".git" (
 git config user.name "AnilPlayz"
 git config user.email "anilplayz@users.noreply.github.com"
 
-git add .
+git add main.py src/ scripts/ config/ data/ assets/skins/ .github/ requirements.txt README.md .gitignore .env.example
 git commit -m "AI Minecraft Shorts Automation with Custom Skin & Watermark"
 
 git branch -M main

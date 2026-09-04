@@ -21,7 +21,7 @@ echo 2. Setting up Git credentials...
 
 echo.
 echo 3. Pushing code to https://github.com/AnilPlayz/youtube-automation-bot.git ...
-"%GIT_PATH%" push -u origin main --force
+"%GIT_PATH%" push -u origin main
 
 echo.
 echo =========================================================

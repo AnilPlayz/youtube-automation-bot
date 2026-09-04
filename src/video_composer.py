@@ -110,7 +110,8 @@ def get_font(size: int = 70) -> ImageFont.ImageFont:
         for font_file in FONTS_DIR.glob(ext):
             try:
                 return ImageFont.truetype(str(font_file), size)
-            except Exception:
+            except Exception as e:
+                print(f"[Video Composer] Font load failed for {font_file.name}: {e}")
                 pass
 
     candidates = [
@@ -129,7 +130,8 @@ def get_font(size: int = 70) -> ImageFont.ImageFont:
             f = ImageFont.truetype(c, size)
             f.getbbox("क")
             return f
-        except Exception:
+        except Exception as e:
+            print(f"[Video Composer] System font fallback failed for {c}: {e}")
             continue
     return ImageFont.load_default()
 
@@ -156,7 +158,8 @@ def get_ascii_font(size: int = 36) -> ImageFont.ImageFont:
                 f = ImageFont.truetype(str(font_file), size)
                 f.getbbox("@Anil-Patel-29")
                 return f
-            except Exception:
+            except Exception as e:
+                print(f"[Video Composer] ASCII font load failed for {font_file.name}: {e}")
                 pass
 
     for c in ascii_candidates:
@@ -165,7 +168,8 @@ def get_ascii_font(size: int = 36) -> ImageFont.ImageFont:
             # Verify it can render ASCII properly
             f.getbbox("@Anil-Patel-29")
             return f
-        except Exception:
+        except Exception as e:
+            print(f"[Video Composer] ASCII system font fallback failed for {c}: {e}")
             continue
     return ImageFont.load_default()
 
@@ -210,21 +214,21 @@ def create_evolving_backdrop(duration: float, theme: dict, width: int = 1080, he
 
         frame = np.zeros((height, width, 3), dtype=np.uint8)
 
-        for y_row in range(height):
-            y_ratio = y_row / height
-            # Vertical gradient + time evolution
-            r = int(bg_start[0] * (1 - phase1) + bg_end[0] * phase1
-                    + accent[0] * phase2 * 0.15 * (1 - y_ratio))
-            g = int(bg_start[1] * (1 - phase1) + bg_end[1] * phase1
-                    + accent[1] * phase2 * 0.15 * y_ratio)
-            b = int(bg_start[2] * (1 - phase1) + bg_end[2] * phase1
-                    + accent[2] * phase2 * 0.15)
-            # Add subtle wave distortion
-            wave = math.sin(y_ratio * 8 + t * 1.5) * 8
-            r = max(0, min(255, r + int(wave)))
-            g = max(0, min(255, g + int(wave * 0.5)))
-            b = max(0, min(255, b + int(wave * 0.7)))
-            frame[y_row, :] = [r, g, b]
+        # Vectorized vertical gradient + time evolution
+        y_ratios = np.linspace(0, 1, height).reshape(-1, 1)
+        wave = np.sin(y_ratios * 8 + t * 1.5) * 8
+
+        r_base = int(bg_start[0] * (1 - phase1) + bg_end[0] * phase1)
+        g_base = int(bg_start[1] * (1 - phase1) + bg_end[1] * phase1)
+        b_base = int(bg_start[2] * (1 - phase1) + bg_end[2] * phase1)
+
+        r_col = (r_base + accent[0] * phase2 * 0.15 * (1 - y_ratios) + wave).astype(np.float32)
+        g_col = (g_base + accent[1] * phase2 * 0.15 * y_ratios + wave * 0.5).astype(np.float32)
+        b_col = (b_base + accent[2] * phase2 * 0.15 + wave * 0.7).astype(np.float32)
+
+        frame[:, :, 0] = np.clip(r_col, 0, 255).astype(np.uint8)
+        frame[:, :, 1] = np.clip(g_col, 0, 255).astype(np.uint8)
+        frame[:, :, 2] = np.clip(b_col, 0, 255).astype(np.uint8)
 
         # ── Radial pulse from center (evolving, not repeating) ──
         cy, cx = height // 2, width // 2
@@ -391,7 +395,8 @@ def render_caption_frame(
         bbox = draw.textbbox((0, 0), text, font=font)
         text_w = bbox[2] - bbox[0]
         text_h = bbox[3] - bbox[1]
-    except Exception:
+    except Exception as e:
+        print(f"[Video Composer] textbbox failed, using fallback: {e}")
         text_w, text_h = 400, 60
 
     # Ensure text fits within width
@@ -402,7 +407,8 @@ def render_caption_frame(
             bbox = draw.textbbox((0, 0), text, font=font)
             text_w = bbox[2] - bbox[0]
             text_h = bbox[3] - bbox[1]
-        except Exception:
+        except Exception as e:
+            print(f"[Video Composer] textbbox retry failed: {e}")
             pass
 
     x = (width - text_w) // 2

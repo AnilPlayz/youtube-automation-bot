@@ -153,7 +153,8 @@ def load_scripts_library() -> List[Dict[str, Any]]:
     try:
         with open(SCRIPTS_LIBRARY_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
-    except Exception:
+    except Exception as e:
+        print(f"[Script Generator] ERROR: Failed to load scripts library: {e}")
         return []
 
 
@@ -209,7 +210,8 @@ def load_used_topics() -> List[str]:
     try:
         with open(USED_TOPICS_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
-    except Exception:
+    except Exception as e:
+        print(f"[Script Generator] ERROR: Failed to load used topics: {e}")
         return []
 
 

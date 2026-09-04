@@ -6,6 +6,18 @@ import sys
 import time
 from pathlib import Path
 
+# Fix Windows console encoding for emoji output
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 from src.config_loader import load_config, BASE_DIR
 from src.script_generator import get_unique_script
 from src.tts_engine import generate_voiceover
