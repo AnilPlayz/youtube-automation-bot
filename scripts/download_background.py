@@ -153,7 +153,7 @@ def generate_procedural_video(output_path: Path, duration: int = 60) -> bool:
         print("[Background Downloader] Generating procedural dark gaming background...")
         subprocess.run(cmd, check=True, timeout=300, capture_output=True, text=True)
         return output_path.exists() and output_path.stat().st_size > 10_000
-    except Exception as e:
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError) as e:
         print(f"[Background Downloader] Procedural generation failed: {e}")
         return False
 
@@ -214,23 +214,29 @@ def transform_video(input_path: Path, output_path: Path,
         subprocess.run(ffmpeg_cmd, check=True, timeout=600,
                        capture_output=True, text=True)
         return output_path.exists() and output_path.stat().st_size > 10_000
-    except subprocess.CalledProcessError as e:
-        print(f"[Background Downloader] FFmpeg transform failed, trying simple copy...")
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError) as e:
+        print(f"[Background Downloader] FFmpeg transform failed ({type(e).__name__}), trying simple copy...")
         try:
             simple_cmd = [
                 "ffmpeg", "-y",
                 "-i", str(input_path),
                 "-t", str(max_duration),
-                "-vf", "hflip,scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",
+                "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",
                 "-an", "-c:v", "libx264", "-preset", "ultrafast",
                 str(output_path)
             ]
             subprocess.run(simple_cmd, check=True, timeout=600,
                            capture_output=True, text=True)
             return output_path.exists() and output_path.stat().st_size > 10_000
-        except Exception as e:
-            print(f"[Background Downloader] FFmpeg simple fallback also failed: {e}")
-            return False
+        except (subprocess.CalledProcessError, FileNotFoundError, OSError) as e2:
+            print(f"[Background Downloader] FFmpeg not available: {e2}")
+            # Fallback: just copy the file as-is
+            try:
+                import shutil
+                shutil.copy2(str(input_path), str(output_path))
+                return output_path.exists() and output_path.stat().st_size > 10_000
+            except Exception:
+                return False
 
 
 def download_and_transform(url: str = None,
