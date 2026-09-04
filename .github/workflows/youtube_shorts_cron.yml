@@ -33,7 +33,7 @@ concurrency:
 jobs:
   generate-and-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     permissions:
       contents: write
 
@@ -86,7 +86,7 @@ jobs:
             FLAGS="$FLAGS --dry-run"
           fi
           if [ -n "${{ github.event.inputs.topic }}" ]; then
-            FLAGS="$FLAGS --topic '${{ github.event.inputs.topic }}'"
+            FLAGS="$FLAGS --topic ${{ github.event.inputs.topic }}"
           fi
           if [ -n "${{ github.event.inputs.privacy }}" ]; then
             FLAGS="$FLAGS --privacy ${{ github.event.inputs.privacy }}"

@@ -40,8 +40,13 @@ def get_authenticated_service():
         client_secret=client_secret
     )
 
-    if not credentials.valid:
-        credentials.refresh(Request())
+    try:
+        if not credentials.valid:
+            credentials.refresh(Request())
+    except Exception as e:
+        print(f"[YouTube Uploader] ERROR: Failed to refresh OAuth token: {e}")
+        print("[YouTube Uploader] Your refresh token may be expired. Regenerate using Get-YouTubeToken.ps1")
+        return None
 
     return build("youtube", "v3", credentials=credentials)
 
@@ -143,8 +148,20 @@ def upload_short_to_youtube(
                 wait_time = 2 ** retry_count
                 print(f"[YouTube Uploader] Server error ({e.resp.status}). Retrying in {wait_time}s... (attempt {retry_count}/{max_retries})")
                 time.sleep(wait_time)
+            elif e.resp.status == 400:
+                print(f"[YouTube Uploader] ERROR: Bad request - invalid video or metadata: {error_reason}")
+                return None
             else:
                 print(f"[YouTube Uploader] ERROR: YouTube API error ({e.resp.status}): {error_reason}")
+                return None
+        except Exception as e:
+            retry_count += 1
+            if retry_count < max_retries:
+                wait_time = 2 ** retry_count
+                print(f"[YouTube Uploader] Unexpected error: {e}. Retrying in {wait_time}s... (attempt {retry_count}/{max_retries})")
+                time.sleep(wait_time)
+            else:
+                print(f"[YouTube Uploader] ERROR: Too many failures during upload: {e}")
                 return None
 
     if response and "id" in response:
