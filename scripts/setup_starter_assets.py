@@ -1,7 +1,7 @@
 """Helper to generate default ready-to-use starter assets (skin, background music, fonts)."""
 
+import array
 import math
-import struct
 import wave
 from pathlib import Path
 from PIL import Image, ImageDraw
@@ -91,8 +91,8 @@ def generate_ambient_music():
         wav_file.setnchannels(1)  # Mono
         wav_file.setsampwidth(2)  # 16-bit
         wav_file.setframerate(sample_rate)
-        packed_data = struct.pack(f"<{len(samples)}h", *samples)
-        wav_file.writeframes(packed_data)
+        audio_array = array.array('h', samples)
+        wav_file.writeframes(audio_array.tobytes())
 
     print(f"[Starter Assets] Created ambient background track at: {music_path}")
 

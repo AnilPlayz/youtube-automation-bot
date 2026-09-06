@@ -147,6 +147,7 @@ def upload_short_to_youtube(
                 retry_count += 1
                 wait_time = 2 ** retry_count
                 print(f"[YouTube Uploader] Server error ({e.resp.status}). Retrying in {wait_time}s... (attempt {retry_count}/{max_retries})")
+                response = None
                 time.sleep(wait_time)
             elif e.resp.status == 400:
                 print(f"[YouTube Uploader] ERROR: Bad request - invalid video or metadata: {error_reason}")
@@ -159,6 +160,7 @@ def upload_short_to_youtube(
             if retry_count < max_retries:
                 wait_time = 2 ** retry_count
                 print(f"[YouTube Uploader] Unexpected error: {e}. Retrying in {wait_time}s... (attempt {retry_count}/{max_retries})")
+                response = None
                 time.sleep(wait_time)
             else:
                 print(f"[YouTube Uploader] ERROR: Too many failures during upload: {e}")

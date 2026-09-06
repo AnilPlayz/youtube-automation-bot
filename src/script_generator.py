@@ -241,6 +241,9 @@ def get_unique_script(force_topic: str = None) -> Dict[str, Any]:
 
     all_scripts = []
     for topic_entry in library:
+        if "topic" not in topic_entry or "fact" not in topic_entry:
+            print(f"[Script Generator] WARNING: Skipping malformed entry: {topic_entry}")
+            continue
         for v_idx in range(5):
             script_id = f"{topic_entry['topic']}_v{v_idx + 1}"
             all_scripts.append((topic_entry, v_idx, script_id))

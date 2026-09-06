@@ -96,12 +96,11 @@ def download_from_direct_urls(output_path: Path) -> bool:
     # These are stable, public domain / CC0 video sources
     # Using archive.org which has stable URLs
     direct_sources = [
-        # Archive.org public domain game footage / abstract backgrounds
-        "https://archive.org/download/minecraft-parkour-free/parkour_gameplay.mp4",
-        # Sample video from test sources  
+        # Google sample videos (very stable, public domain)
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+        # W3Schools test video (Big Buck Bunny clip, reliable)
         "https://www.w3schools.com/html/mov_bbb.mp4",
-        # Coverr free stock videos (abstract/dark themes)
-        "https://storage.coverr.co/videos/abstract-particles-dark/preview",
     ]
 
     for url in direct_sources:

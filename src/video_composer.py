@@ -332,14 +332,14 @@ def load_background_video(
             # Video is wider than 9:16 -> scale height, crop center width
             clip = clip.resize(height=height)
             new_w, new_h = clip.size
-            x_center = new_w / 2
-            clip = clip.crop(x1=x_center - width / 2, x2=x_center + width / 2, y1=0, y2=height)
+            x_center = new_w // 2
+            clip = clip.crop(x1=x_center - width // 2, x2=x_center + width // 2, y1=0, y2=height)
         else:
             # Video is taller or same -> scale width, crop center height
             clip = clip.resize(width=width)
             new_w, new_h = clip.size
-            y_center = new_h / 2
-            clip = clip.crop(x1=0, x2=width, y1=y_center - height / 2, y2=y_center + height / 2)
+            y_center = new_h // 2
+            clip = clip.crop(x1=0, x2=width, y1=y_center - height // 2, y2=y_center + height // 2)
 
         return clip.set_duration(duration)
 
@@ -519,7 +519,11 @@ def create_full_short_video(
             bg_music = bg_music.loop(duration=total_duration)
         else:
             bg_music = bg_music.subclip(0, total_duration)
-        bg_music = bg_music.volumex(vid_cfg.get("music_volume", 0.12))
+        music_vol = vid_cfg.get("music_volume", 0.12)
+        duck_enabled = vid_cfg.get("duck_music_under_speech", False)
+        if duck_enabled:
+            music_vol = music_vol * 0.5
+        bg_music = bg_music.volumex(music_vol)
         audio_tracks.append(bg_music)
 
     final_audio = CompositeAudioClip(audio_tracks).set_duration(total_duration)
@@ -529,28 +533,30 @@ def create_full_short_video(
     video_layers = [bg_video]
 
     # 3. Captions BEHIND character (added BEFORE avatar layer)
-    caption_y = int(height * 0.38)  # Position captions at 38% from top (behind center character)
+    caption_y = int(height * config.get("captions", {}).get("position_y_ratio", 0.38))
     font_size = config.get("captions", {}).get("font_size", 68)
 
     for chunk in subtitle_chunks:
         c_start = max(0.0, chunk["start"])
+        if c_start >= total_duration:
+            continue
         c_end = min(total_duration, chunk["end"] + 0.25)
         c_duration = max(0.1, c_end - c_start)
 
-        def make_sub_rgb_factory(text, dur, th):
-            def fn(t):
-                img = render_caption_frame(text, t, dur, th, width, font_size)
-                return np.array(img)[:, :, :3]
-            return fn
+        def make_sub_factory(text, dur, th):
+            _cache = {}
+            def _render(t):
+                t_key = round(t, 4)
+                if t_key not in _cache:
+                    _cache[t_key] = np.array(render_caption_frame(text, t, dur, th, width, font_size))
+                return _cache[t_key]
+            def rgb_fn(t):
+                return _render(t)[:, :, :3]
+            def mask_fn(t):
+                return (_render(t)[:, :, 3] / 255.0).astype(np.float32)
+            return rgb_fn, mask_fn
 
-        def make_sub_mask_factory(text, dur, th):
-            def fn(t):
-                img = render_caption_frame(text, t, dur, th, width, font_size)
-                return (np.array(img)[:, :, 3] / 255.0).astype(np.float32)
-            return fn
-
-        sub_rgb = make_sub_rgb_factory(chunk["text"], c_duration, theme)
-        sub_mask = make_sub_mask_factory(chunk["text"], c_duration, theme)
+        sub_rgb, sub_mask = make_sub_factory(chunk["text"], c_duration, theme)
 
         mask_clip = VideoClip(sub_mask, duration=c_duration, ismask=True)
         sub_clip = (
@@ -565,27 +571,46 @@ def create_full_short_video(
     avatar_username = custom_username or player_cfg.get("minecraft_username", "Anil_playz29")
     avatar_base_img = get_player_avatar(avatar_username)
 
-    avatar_scale = 0.45  # Larger character - 45% of screen width
+    avatar_scale = player_cfg.get("avatar_scale", 0.28)
     avatar_w = int(width * avatar_scale)
     avatar_h = int(avatar_base_img.height * (avatar_w / avatar_base_img.width))
     avatar_resized = avatar_base_img.resize((avatar_w, avatar_h), Image.BICUBIC)
 
     anim_type = player_cfg.get("avatar_animation", "talking_bob")
 
-    # CENTER position
-    avatar_x = (width - avatar_w) // 2
-    avatar_y = int(height * 0.45) - avatar_h // 2  # Vertically centered slightly above middle
+    avatar_position = player_cfg.get("avatar_position", "center")
+    if avatar_position == "bottom_left":
+        avatar_x = 40
+        avatar_y = height - avatar_h - 200
+    elif avatar_position == "bottom_right":
+        avatar_x = width - avatar_w - 40
+        avatar_y = height - avatar_h - 200
+    elif avatar_position == "top_center":
+        avatar_x = (width - avatar_w) // 2
+        avatar_y = 150
+    elif avatar_position == "center":
+        avatar_x = (width - avatar_w) // 2
+        avatar_y = int(height * 0.45) - avatar_h // 2
+    else:
+        avatar_x = (width - avatar_w) // 2
+        avatar_y = int(height * 0.45) - avatar_h // 2
+
+    _avatar_cache = {}
+    def _render_avatar(t):
+        t_key = round(t, 4)
+        if t_key not in _avatar_cache:
+            frame = generate_avatar_frame(avatar_resized, t, anim_type)
+            _avatar_cache[t_key] = np.array(frame)
+        return _avatar_cache[t_key]
 
     def make_avatar_rgb(t):
-        frame = generate_avatar_frame(avatar_resized, t, anim_type)
-        arr = np.array(frame)
+        arr = _render_avatar(t)
         if arr.ndim == 3 and arr.shape[2] == 4:
             return arr[:, :, :3]
         return arr
 
     def make_avatar_mask(t):
-        frame = generate_avatar_frame(avatar_resized, t, anim_type)
-        arr = np.array(frame)
+        arr = _render_avatar(t)
         if arr.ndim == 3 and arr.shape[2] == 4:
             return (arr[:, :, 3] / 255.0).astype(np.float32)
         return np.ones((arr.shape[0], arr.shape[1]), dtype=np.float32)
@@ -602,7 +627,15 @@ def create_full_short_video(
     watermark_text = chan_cfg.get("watermark_text", "@Anil-Patel-29")
     opacity = chan_cfg.get("watermark_opacity", 0.85)
     watermark_img = create_watermark_image(watermark_text, opacity)
-    wm_pos = ((width - watermark_img.width) // 2, 80)  # Top center
+    wm_position = chan_cfg.get("watermark_position", "top_right")
+    if wm_position == "top_right":
+        wm_pos = (width - watermark_img.width - 20, 80)
+    elif wm_position == "top_left":
+        wm_pos = (20, 80)
+    elif wm_position == "bottom_center":
+        wm_pos = ((width - watermark_img.width) // 2, height - watermark_img.height - 80)
+    else:
+        wm_pos = ((width - watermark_img.width) // 2, 80)  # top_center fallback
     wm_clip = pil_to_image_clip(watermark_img, total_duration).set_position(wm_pos)
     video_layers.append(wm_clip)
 
