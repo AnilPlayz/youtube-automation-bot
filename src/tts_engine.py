@@ -17,7 +17,7 @@ async def generate_speech_and_timestamps_async(
     Generate MP3 voiceover using edge-tts and collect word-level boundary timestamps.
     Returns list of dicts: [{"word": "word", "start": 0.12, "end": 0.45}, ...]
     """
-    communicate = edge_tts.Communicate(text, voice=voice, rate=rate, pitch=pitch)
+    communicate = edge_tts.Communicate(text, voice=voice, rate=rate, pitch=pitch, boundary="WordBoundary")
     
     words_data: List[Dict[str, Any]] = []
 

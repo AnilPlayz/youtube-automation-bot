@@ -5,9 +5,22 @@
 import json
 import os
 import random
+import sys
 from pathlib import Path
 from typing import Dict, Any, List
 from src.config_loader import load_config, DATA_DIR
+
+# Fix Windows console encoding for Hindi/Unicode output
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 USED_TOPICS_FILE = DATA_DIR / "used_topics.json"
 SCRIPTS_LIBRARY_FILE = DATA_DIR / "scripts_500.json"
