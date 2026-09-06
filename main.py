@@ -1,7 +1,6 @@
 """Master Pipeline Orchestrator for Minecraft Facts YouTube Shorts Automation."""
 
 import argparse
-import os
 import sys
 import time
 from pathlib import Path
@@ -41,23 +40,23 @@ def run_pipeline(
     print(" 🚀 STARTING AI MINECRAFT FACTS SHORTS AUTOMATION PIPELINE")
     print("=" * 65)
 
-    # 0. Ensure gameplay background footage is available
-    print("\n[Step 0/5] Ensuring Minecraft gameplay background footage...")
+    # 1. Ensure gameplay background footage is available
+    print("\n[Step 1/5] Ensuring Minecraft gameplay background footage...")
     bg_ready = ensure_gameplay_background()
     if bg_ready:
         print("  • ✅ Gameplay background ready")
     else:
         print("  • ⚠️ No gameplay footage available — will use animated backdrop")
 
-    # 1. Generate Unique Script
-    print("\n[Step 1/5] Generating unique viral Minecraft fact script...")
+    # 2. Generate Unique Script
+    print("\n[Step 2/5] Generating unique viral Minecraft fact script...")
     script_data = get_unique_script(force_topic=force_topic)
     print(f"  • Topic:       {script_data['topic']}")
     print(f"  • Title:       {script_data['title']}")
     print(f"  • Script Words: {len(script_data['voiceover_script'].split())} words")
 
-    # 2. Generate Voiceover & Subtitles
-    print("\n[Step 2/5] Synthesizing neural voiceover and extracting word timestamps...")
+    # 3. Generate Voiceover & Subtitles
+    print("\n[Step 3/5] Synthesizing neural voiceover and extracting word timestamps...")
     audio_path = str(OUTPUT_DIR / f"voiceover_{timestamp}.mp3")
     audio_file, sub_chunks = generate_voiceover(
         script_text=script_data["voiceover_script"],
@@ -66,8 +65,8 @@ def run_pipeline(
     print(f"  • Voiceover saved: {audio_file}")
     print(f"  • Subtitle chunks: {len(sub_chunks)} phrases synced")
 
-    # 3. Assemble Video
-    print("\n[Step 3/5] Compositing 9:16 Short (gameplay + subtitles + watermark + player avatar)...")
+    # 4. Assemble Video
+    print("\n[Step 4/5] Compositing 9:16 Short (gameplay + subtitles + watermark + player avatar)...")
     video_output_path = str(OUTPUT_DIR / f"minecraft_short_{timestamp}.mp4")
     topic_theme = script_data.get("topic_theme", "overworld")
     final_video = create_full_short_video(
@@ -79,15 +78,15 @@ def run_pipeline(
     )
     print(f"  • Rendered Video: {final_video}")
 
-    # 4. Upload to YouTube
+    # 5. Upload to YouTube
     upload_success = False
     if dry_run:
-        print("\n[Step 4/5] ⚠️ DRY-RUN MODE: Skipping YouTube upload.")
+        print("\n[Step 5/5] ⚠️ DRY-RUN MODE: Skipping YouTube upload.")
         print(f"  • Video file ready at: {final_video}")
         video_id = "DRY_RUN_LOCAL"
         upload_success = True
     else:
-        print("\n[Step 4/5] Publishing Short to YouTube...")
+        print("\n[Step 5/5] Publishing Short to YouTube...")
         video_id = upload_short_to_youtube(
             video_path=final_video,
             title=script_data["title"],

@@ -7,7 +7,7 @@ import os
 import random
 from pathlib import Path
 from typing import Dict, Any, List
-from src.config_loader import load_config, get_gemini_api_key, DATA_DIR
+from src.config_loader import load_config, DATA_DIR
 
 USED_TOPICS_FILE = DATA_DIR / "used_topics.json"
 SCRIPTS_LIBRARY_FILE = DATA_DIR / "scripts_500.json"

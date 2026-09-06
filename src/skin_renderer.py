@@ -3,7 +3,6 @@ Supports online username rendering (Minotar/Crafatar/Visage) and offline 3D isom
 """
 
 import math
-import os
 import requests
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter

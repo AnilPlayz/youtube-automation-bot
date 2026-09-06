@@ -11,7 +11,6 @@ import os
 import random
 import subprocess
 import sys
-import json
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent

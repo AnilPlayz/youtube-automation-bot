@@ -4,7 +4,6 @@ Layout: Character CENTER (in front), Professional captions BEHIND character,
 """
 
 import math
-import os
 import random
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
@@ -652,6 +651,7 @@ def create_full_short_video(
         audio_codec="aac",
         preset="ultrafast",
         threads=4,
+        ffmpeg_params=["-pix_fmt", "yuv420p"],
         logger=None
     )
 
