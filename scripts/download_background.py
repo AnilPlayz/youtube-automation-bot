@@ -557,19 +557,3 @@ if __name__ == "__main__":
         success = download_and_transform(url=args.url)
 
     sys.exit(0 if success else 1)
-
-
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(
-        description="Download & transform gameplay for Shorts background")
-    parser.add_argument("--url", type=str, default=None, help="Video URL")
-    parser.add_argument("--force", action="store_true", help="Re-download")
-    args = parser.parse_args()
-
-    if args.force:
-        for f in GAMEPLAY_DIR.glob("minecraft_gameplay*"):
-            f.unlink()
-
-    success = download_and_transform(url=args.url)
-    sys.exit(0 if success else 1)
