@@ -177,9 +177,8 @@ def create_evolving_backdrop(duration: float, theme: dict, width: int = 1080, he
     """
     Creates a non-looping, continuously evolving animated background.
     - Gradient colors shift over time (not repeating)
-    - Particles spawn, drift, and fade independently
+    - Per-theme animated effects (particles, glows, shapes)
     - Radial pulse effects evolve
-    - No scrolling tile grid (fully procedural)
     """
     print("[Video Composer] Generating evolving animated backdrop...")
 
@@ -189,27 +188,56 @@ def create_evolving_backdrop(duration: float, theme: dict, width: int = 1080, he
     glow_color = theme["glow"]
     particle_color = theme["particle"]
 
+    # Detect theme name from colors for per-theme effects
+    theme_name = "generic"
+    for name, pal in THEME_PALETTES.items():
+        if pal == theme:
+            theme_name = name
+            break
+
     # Pre-generate particle data (each has unique lifecycle)
-    num_particles = 40
+    num_particles = 50 if theme_name in ("nether", "magic", "mob") else 35
     particles = []
     for i in range(num_particles):
         particles.append({
             "x": random.randint(0, width),
             "y": random.randint(0, height),
-            "size": random.randint(3, 14),
-            "speed_y": random.uniform(15, 60),
-            "drift_x": random.uniform(-20, 20),
+            "size": random.randint(3, 16 if theme_name in ("nether", "magic") else 12),
+            "speed_y": random.uniform(15, 80 if theme_name == "nether" else 50),
+            "drift_x": random.uniform(-25, 25),
             "phase": random.uniform(0, math.pi * 2),
             "brightness": random.uniform(0.3, 1.0),
-            "birth_t": random.uniform(0, duration * 0.3),  # Staggered births
+            "birth_t": random.uniform(0, duration * 0.4),
         })
 
+    # Theme-specific extra elements
+    num_rings = 3 if theme_name in ("end", "magic") else 0
+    num_eyes = 6 if theme_name == "mob" else 0
+    num_bubbles = 15 if theme_name == "ocean" else 0
+    num_crystals = 8 if theme_name == "cave" else 0
+    num_leaves = 12 if theme_name == "overworld" else 0
+    num_sparks = 10 if theme_name == "redstone" else 0
+
+    eye_data = [{"x": random.randint(50, width - 50), "y": random.randint(100, height - 200),
+                  "blink_phase": random.uniform(0, math.pi * 2)} for _ in range(num_eyes)]
+    bubble_data = [{"x": random.randint(50, width - 50), "y": random.randint(height // 2, height),
+                     "speed": random.uniform(20, 60), "size": random.randint(4, 12),
+                     "phase": random.uniform(0, math.pi * 2)} for _ in range(num_bubbles)]
+    crystal_data = [{"x": random.randint(0, width), "y": random.randint(0, height),
+                      "size": random.randint(20, 60), "phase": random.uniform(0, math.pi * 2),
+                      "brightness": random.uniform(0.3, 0.8)} for _ in range(num_crystals)]
+    leaf_data = [{"x": random.randint(0, width), "y": random.randint(-100, height),
+                   "speed_x": random.uniform(-15, 15), "speed_y": random.uniform(20, 50),
+                   "rotation": random.uniform(0, 360), "rot_speed": random.uniform(-90, 90),
+                   "size": random.randint(6, 14)} for _ in range(num_leaves)]
+    spark_data = [{"x": random.randint(0, width), "y": random.randint(0, height),
+                    "phase": random.uniform(0, math.pi * 2),
+                    "brightness": random.uniform(0.4, 1.0)} for _ in range(num_sparks)]
+
     def make_frame(t):
-        # ── Evolving gradient (colors shift over time, never loops back) ──
-        progress = t / max(duration, 0.01)  # 0→1 over video
-        # Blend from bg_start toward bg_end, then toward accent tint
-        phase1 = min(1.0, progress * 2)  # First half: start→end
-        phase2 = max(0.0, (progress - 0.5) * 2)  # Second half: slight accent tint
+        progress = t / max(duration, 0.01)
+        phase1 = min(1.0, progress * 2)
+        phase2 = max(0.0, (progress - 0.5) * 2)
 
         frame = np.zeros((height, width, 3), dtype=np.uint8)
 
@@ -229,10 +257,10 @@ def create_evolving_backdrop(duration: float, theme: dict, width: int = 1080, he
         frame[:, :, 1] = np.clip(g_col, 0, 255).astype(np.uint8)
         frame[:, :, 2] = np.clip(b_col, 0, 255).astype(np.uint8)
 
-        # ── Radial pulse from center (evolving, not repeating) ──
+        # ── Radial pulse from center ──
         cy, cx = height // 2, width // 2
         pulse_radius = int(200 + t * 80 + math.sin(t * 2) * 100)
-        pulse_intensity = max(0, 0.2 - progress * 0.15)  # Fades as video progresses
+        pulse_intensity = max(0, 0.2 - progress * 0.15)
 
         y_coords, x_coords = np.ogrid[:height, :width]
         dist = np.sqrt((x_coords - cx) ** 2 + (y_coords - cy) ** 2)
@@ -244,41 +272,150 @@ def create_evolving_backdrop(duration: float, theme: dict, width: int = 1080, he
                 0, 255
             ).astype(np.uint8)
 
-        # ── Vignette (evolving intensity) ──
+        # ── Vignette ──
         max_dist = np.sqrt(cx ** 2 + cy ** 2)
         vig_strength = 0.5 + 0.15 * math.sin(t * 1.2)
         vignette = 1.0 - (dist / max_dist) * vig_strength
         vignette = np.clip(vignette, 0.25, 1.0)
         frame = (frame * vignette[:, :, np.newaxis]).astype(np.uint8)
 
-        # ── Particles (each has unique lifecycle) ──
+        # ── Theme-specific effects (drawn on top) ──
         frame_pil = Image.fromarray(frame)
         pdraw = ImageDraw.Draw(frame_pil)
 
+        # Floating particles (all themes)
         for p in particles:
             age = t - p["birth_t"]
             if age < 0:
-                continue  # Not born yet
-            # Float upward, drift sideways
+                continue
             py = (p["y"] - age * p["speed_y"]) % height
             px = p["x"] + math.sin(age * 1.2 + p["phase"]) * 30 + p["drift_x"] * age * 0.3
             px = px % width
-
-            # Fade in/out based on lifecycle
             life_alpha = min(1.0, age * 2) * max(0.0, 1.0 - (age / (duration * 0.8)))
             bright = p["brightness"] * life_alpha
-
             if bright < 0.05:
                 continue
-
             sz = p["size"]
             pc = tuple(int(c * bright) for c in particle_color)
             gc = tuple(int(c * bright * 0.3) for c in glow_color)
-
-            # Glow halo
             pdraw.ellipse([px - sz - 5, py - sz - 5, px + sz + 5, py + sz + 5], fill=gc)
-            # Bright core
             pdraw.ellipse([px - sz, py - sz, px + sz, py + sz], fill=pc)
+
+        # ── Nether: Lava pool glow at bottom ──
+        if theme_name == "nether":
+            lava_y = int(height * 0.85)
+            lava_intensity = int(80 + 40 * math.sin(t * 2.5))
+            for row in range(lava_y, min(lava_y + 120, height)):
+                alpha = max(0, int(lava_intensity * (1.0 - (row - lava_y) / 120)))
+                for col in range(width):
+                    wave_off = int(math.sin(col * 0.02 + t * 3) * 15)
+                    if abs(row - (lava_y + wave_off)) < 40:
+                        r, g, b = frame_pil.getpixel((col, row))[:3]
+                        frame_pil.putpixel((col, row), (
+                            min(255, r + alpha),
+                            min(255, g + alpha // 4),
+                            min(255, b)
+                        ))
+
+        # ── End: Purple portal rings ──
+        if theme_name == "end":
+            for ring_i in range(num_rings):
+                ring_r = int(100 + ring_i * 80 + math.sin(t * 1.5 + ring_i) * 40)
+                ring_alpha = int(60 - ring_i * 15)
+                if ring_alpha > 0:
+                    for angle_deg in range(0, 360, 3):
+                        angle = math.radians(angle_deg + t * 20)
+                        rx = int(cx + ring_r * math.cos(angle))
+                        ry = int(cy + ring_r * math.sin(angle) * 0.6)
+                        if 0 <= rx < width and 0 <= ry < height:
+                            r, g, b = frame_pil.getpixel((rx, ry))[:3]
+                            frame_pil.putpixel((rx, ry), (
+                                min(255, r + ring_alpha // 2),
+                                min(255, g),
+                                min(255, b + ring_alpha)
+                            ))
+
+        # ── Ocean: Rising bubbles ──
+        if theme_name == "ocean":
+            for bub in bubble_data:
+                age = t * bub["speed"]
+                by = int((bub["y"] - age) % height)
+                bx = int(bub["x"] + math.sin(t + bub["phase"]) * 20)
+                bs = bub["size"]
+                if 0 <= bx < width and 0 <= by < height:
+                    bubble_alpha = int(120 + 40 * math.sin(t * 2 + bub["phase"]))
+                    pdraw.ellipse([bx - bs, by - bs, bx + bs, by + bs],
+                                  outline=(100, 200, 255, min(255, bubble_alpha)),
+                                  fill=None)
+                    pdraw.ellipse([bx - bs + 2, by - bs + 2, bx - bs + bs // 2, by - bs + bs // 2],
+                                  fill=(200, 240, 255, 80))
+
+        # ── Cave: Crystal glow points ──
+        if theme_name == "cave":
+            for crystal in crystal_data:
+                cr_x = crystal["x"]
+                cr_y = crystal["y"]
+                cr_sz = crystal["size"]
+                cr_bright = crystal["brightness"] * (0.5 + 0.5 * math.sin(t * 2 + crystal["phase"]))
+                if cr_bright > 0.1:
+                    glow_color_cave = tuple(int(c * cr_bright) for c in (120, 200, 255))
+                    pdraw.ellipse([cr_x - cr_sz, cr_y - cr_sz, cr_x + cr_sz, cr_y + cr_sz],
+                                  fill=glow_color_cave + (int(cr_bright * 60),))
+                    pdraw.ellipse([cr_x - cr_sz // 3, cr_y - cr_sz // 3,
+                                   cr_x + cr_sz // 3, cr_y + cr_sz // 3],
+                                  fill=(200, 240, 255, int(cr_bright * 150)))
+
+        # ── Overworld: Drifting leaves ──
+        if theme_name == "overworld":
+            for leaf in leaf_data:
+                lx = int((leaf["x"] + leaf["speed_x"] * t) % width)
+                ly = int((leaf["y"] + leaf["speed_y"] * t) % height)
+                ls = leaf["size"]
+                pdraw.ellipse([lx - ls, ly - ls // 2, lx + ls, ly + ls // 2],
+                              fill=(80, 180, 60, 120))
+
+        # ── Redstone: Circuit line glow ──
+        if theme_name == "redstone":
+            for spark in spark_data:
+                sx = spark["x"]
+                sy = spark["y"]
+                s_bright = spark["brightness"] * (0.3 + 0.7 * abs(math.sin(t * 3 + spark["phase"])))
+                if s_bright > 0.15:
+                    sz = int(8 + 6 * s_bright)
+                    pdraw.ellipse([sx - sz, sy - sz, sx + sz, sy + sz],
+                                  fill=(255, int(40 * s_bright), int(20 * s_bright), int(s_bright * 200)))
+                    # Horizontal circuit line
+                    for dx in range(-60, 61, 4):
+                        nx = sx + dx
+                        if 0 <= nx < width:
+                            line_bright = s_bright * max(0, 1.0 - abs(dx) / 60)
+                            pdraw.point((nx, sy), fill=(255, int(30 * line_bright), 0, int(line_bright * 120)))
+
+        # ── Mob: Flickering red eyes ──
+        if theme_name == "mob":
+            for eye in eye_data:
+                ex, ey = eye["x"], eye["y"]
+                blink = 0.5 + 0.5 * math.sin(t * 4 + eye["blink_phase"])
+                if blink > 0.3:
+                    eye_sz = int(4 + 3 * blink)
+                    eye_alpha = int(blink * 200)
+                    pdraw.ellipse([ex - eye_sz - 6, ey - eye_sz, ex - 6, ey + eye_sz],
+                                  fill=(255, 30, 30, eye_alpha))
+                    pdraw.ellipse([ex + 6 - eye_sz, ey - eye_sz, ex + 6 + eye_sz, ey + eye_sz],
+                                  fill=(255, 30, 30, eye_alpha))
+
+        # ── Magic: Spiral sparkles ──
+        if theme_name == "magic":
+            for i in range(20):
+                angle = t * 1.5 + i * math.pi * 2 / 20
+                spiral_r = 80 + i * 12 + math.sin(t * 2 + i) * 30
+                mx = int(cx + spiral_r * math.cos(angle))
+                my = int(cy + spiral_r * math.sin(angle) * 0.7)
+                if 0 <= mx < width and 0 <= my < height:
+                    m_bright = 0.4 + 0.6 * abs(math.sin(t * 3 + i * 0.5))
+                    m_sz = int(3 + 4 * m_bright)
+                    pdraw.ellipse([mx - m_sz, my - m_sz, mx + m_sz, my + m_sz],
+                                  fill=(int(200 * m_bright), int(150 * m_bright), 255, int(m_bright * 180)))
 
         return np.array(frame_pil)
 
@@ -293,23 +430,38 @@ def load_background_video(
 ) -> VideoClip:
     """
     Loads gameplay footage from assets/gameplay if available and crops it to 9:16 vertical.
-    If no gameplay videos exist or if loading fails, falls back to the procedural
-    evolving animated backdrop matching the topic theme.
+    Prioritizes theme-specific backgrounds (e.g. nether_gameplay.mp4 for nether topics).
+    Falls back to generic gameplay or procedural animated backdrop.
     """
     ensure_assets_dirs()
     video_extensions = ["*.mp4", "*.mov", "*.mkv", "*.webm", "*.avi"]
-    video_files = []
-    for ext in video_extensions:
-        video_files.extend(list(GAMEPLAY_DIR.glob(ext)))
-
     theme = get_theme(topic_theme)
 
-    if not video_files:
-        print("[Video Composer] No gameplay videos found in assets/gameplay. Using evolving animated backdrop.")
+    # Strategy 1: Look for theme-specific gameplay (e.g. nether_gameplay.mp4)
+    theme_specific = []
+    theme_pattern = f"{topic_theme}_gameplay"
+    for ext in video_extensions:
+        for f in GAMEPLAY_DIR.glob(ext):
+            if theme_pattern.lower() in f.name.lower():
+                theme_specific.append(f)
+
+    # Strategy 2: Any gameplay video
+    all_videos = []
+    for ext in video_extensions:
+        all_videos.extend(list(GAMEPLAY_DIR.glob(ext)))
+
+    # Prefer theme-specific, then any available
+    candidates = theme_specific if theme_specific else all_videos
+    # Exclude raw downloads
+    candidates = [v for v in candidates if not v.name.startswith("_raw")]
+
+    if not candidates:
+        print(f"[Video Composer] No gameplay videos found. Using evolving animated backdrop for theme: {topic_theme}")
         return create_evolving_backdrop(duration, theme, width, height)
 
-    chosen_video_path = random.choice(video_files)
-    print(f"[Video Composer] Using gameplay background clip: {chosen_video_path.name}")
+    chosen_video_path = random.choice(candidates)
+    label = "theme-matched" if theme_specific else "generic"
+    print(f"[Video Composer] Using {label} gameplay background: {chosen_video_path.name} (theme: {topic_theme})")
 
     try:
         clip = VideoFileClip(str(chosen_video_path))

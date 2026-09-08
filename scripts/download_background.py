@@ -7,11 +7,25 @@ Uses multiple strategies:
 4. Apply copyright-safe transformations via FFmpeg
 """
 
+import io
 import os
 import random
 import subprocess
 import sys
 from pathlib import Path
+
+# Fix Windows console encoding for emoji output
+if sys.platform == "win32":
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        try:
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 GAMEPLAY_DIR = BASE_DIR / "assets" / "gameplay"
@@ -126,6 +140,132 @@ def download_from_direct_urls(output_path: Path) -> bool:
             continue
 
     return False
+
+
+# FFmpeg filter chains for each theme's procedural video
+THEME_FFMPEG_FILTERS = {
+    "nether": {
+        "base_color": "0x1a0500",
+        "filter": (
+            "geq="
+            "r='clip(80+60*sin(2*PI*T/3+X/80)+40*sin(2*PI*T/5+Y/150),40,220)':"
+            "g='clip(15+10*sin(2*PI*T/4+Y/200)+8*sin(2*PI*T/7+X/120),0,50)':"
+            "b='clip(5+5*sin(2*PI*T/6+X/150+Y/250),0,20)'"
+        ),
+        "extra_filters": "eq=brightness=0.05:saturation=1.3",
+    },
+    "end": {
+        "base_color": "0x0a0020",
+        "filter": (
+            "geq="
+            "r='clip(30+20*sin(2*PI*T/6+X/120)+15*sin(2*PI*T/9+Y/180),5,80)':"
+            "g='clip(8+8*sin(2*PI*T/5+Y/200)+5*sin(2*PI*T/8+X/150),0,30)':"
+            "b='clip(60+40*sin(2*PI*T/4+X/100+Y/160)+25*sin(2*PI*T/7),20,120)'"
+        ),
+        "extra_filters": "eq=brightness=-0.05:saturation=1.2",
+    },
+    "ocean": {
+        "base_color": "0x001a3d",
+        "filter": (
+            "geq="
+            "r='clip(10+8*sin(2*PI*T/5+X/150+Y/200)+5*sin(2*PI*T/8+X/100),0,40)':"
+            "g='clip(30+20*sin(2*PI*T/4+Y/120)+15*sin(2*PI*T/6+X/180),10,80)':"
+            "b='clip(80+50*sin(2*PI*T/3+X/90+Y/140)+30*sin(2*PI*T/7),30,160)'"
+        ),
+        "extra_filters": "eq=brightness=0.02:saturation=1.1",
+    },
+    "cave": {
+        "base_color": "0x0a0c14",
+        "filter": (
+            "geq="
+            "r='clip(15+10*sin(2*PI*T/8+X/200)+8*sin(2*PI*T/12+Y/250),5,40)':"
+            "g='clip(20+15*sin(2*PI*T/6+Y/180)+10*sin(2*PI*T/10+X/160),5,50)':"
+            "b='clip(40+30*sin(2*PI*T/5+X/120+Y/200)+20*sin(2*PI*T/9),10,80)'"
+        ),
+        "extra_filters": "eq=brightness=-0.08:saturation=0.9",
+    },
+    "overworld": {
+        "base_color": "0x0a2d0a",
+        "filter": (
+            "geq="
+            "r='clip(20+15*sin(2*PI*T/6+X/130)+10*sin(2*PI*T/8+Y/200),5,60)':"
+            "g='clip(50+35*sin(2*PI*T/4+Y/100)+25*sin(2*PI*T/7+X/150),15,120)':"
+            "b='clip(15+10*sin(2*PI*T/7+X/180+Y/220)+8*sin(2*PI*T/10),5,40)'"
+        ),
+        "extra_filters": "eq=brightness=0.03:saturation=1.2",
+    },
+    "redstone": {
+        "base_color": "0x140000",
+        "filter": (
+            "geq="
+            "r='clip(60+45*sin(2*PI*T/4+X/100)+30*sin(2*PI*T/6+Y/140),20,160)':"
+            "g='clip(5+5*sin(2*PI*T/8+Y/200)+3*sin(2*PI*T/12+X/180),0,20)':"
+            "b='clip(8+6*sin(2*PI*T/7+X/160+Y/200)+4*sin(2*PI*T/10),0,25)'"
+        ),
+        "extra_filters": "eq=brightness=0.02:saturation=1.4",
+    },
+    "magic": {
+        "base_color": "0x0f0530",
+        "filter": (
+            "geq="
+            "r='clip(40+30*sin(2*PI*T/5+X/110)+20*sin(2*PI*T/7+Y/170),10,100)':"
+            "g='clip(15+10*sin(2*PI*T/6+Y/190)+8*sin(2*PI*T/9+X/140),0,40)':"
+            "b='clip(70+50*sin(2*PI*T/4+X/90+Y/130)+30*sin(2*PI*T/8),20,140)'"
+        ),
+        "extra_filters": "eq=brightness=0.03:saturation=1.3",
+    },
+    "mob": {
+        "base_color": "0x140508",
+        "filter": (
+            "geq="
+            "r='clip(50+35*sin(2*PI*T/5+X/100)+25*sin(2*PI*T/7+Y/160),15,120)':"
+            "g='clip(8+6*sin(2*PI*T/8+Y/220)+4*sin(2*PI*T/11+X/180),0,25)':"
+            "b='clip(12+8*sin(2*PI*T/7+X/150+Y/200)+5*sin(2*PI*T/10),0,30)'"
+        ),
+        "extra_filters": "eq=brightness=-0.05:saturation=1.2",
+    },
+}
+
+
+def generate_themed_procedural_video(output_path: Path, theme: str, duration: int = 90) -> bool:
+    """Generate a themed animated background video using FFmpeg geq filters."""
+    if theme not in THEME_FFMPEG_FILTERS:
+        theme = "overworld"
+
+    cfg = THEME_FFMPEG_FILTERS[theme]
+    base_color = cfg["base_color"]
+    vf_chain = cfg["filter"]
+
+    try:
+        cmd = [
+            "ffmpeg", "-y",
+            "-f", "lavfi",
+            "-i", f"color=c={base_color}:s=1080x1920:d={duration}",
+            "-vf", vf_chain,
+            "-t", str(duration),
+            "-c:v", "libx264",
+            "-preset", "ultrafast",
+            "-crf", "26",
+            "-pix_fmt", "yuv420p",
+            "-movflags", "+faststart",
+            "-an",
+            str(output_path),
+        ]
+        print(f"[Background Downloader] Generating {theme} themed procedural background...")
+        subprocess.run(cmd, check=True, timeout=300, capture_output=True, text=True)
+
+        if output_path.exists() and output_path.stat().st_size > 50_000:
+            size_mb = output_path.stat().st_size / (1024 * 1024)
+            print(f"[Background Downloader] ✅ {theme} procedural background: {size_mb:.1f} MB")
+            return True
+
+        print(f"[Background Downloader] ❌ {theme} procedural video too small")
+        output_path.unlink(missing_ok=True)
+        return False
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError) as e:
+        print(f"[Background Downloader] ❌ {theme} procedural generation failed: {e}")
+        output_path.unlink(missing_ok=True)
+        return False
 
 
 def generate_procedural_video(output_path: Path, duration: int = 60) -> bool:
@@ -311,6 +451,112 @@ def ensure_gameplay_background(url: str = None) -> bool:
     if url is None:
         url = os.getenv("GAMEPLAY_SOURCE_URL", "")
     return download_and_transform(url=url)
+
+
+# Themed gameplay search queries for Pexels
+THEME_SEARCH_QUERIES = {
+    "nether": ["fire lava dark", "volcano eruption", "hell fire flames"],
+    "end": ["dark void space", "purple portal", "dark dimension"],
+    "ocean": ["underwater ocean deep", "ocean waves underwater", "coral reef fish"],
+    "cave": ["dark cave tunnel", "underground mine", "crystal cave dark"],
+    "overworld": ["minecraft game", "pixel game green", "forest nature game"],
+    "redstone": ["circuit board technology", "gears machine mechanical", "neon tech abstract"],
+    "magic": ["magic spell particles", "enchanted glowing", "mystical light particles"],
+    "mob": ["monster creature dark", "zombie horror dark", "skeleton dark gaming"],
+}
+
+
+def download_themed_gameplay(theme: str = None) -> bool:
+    """
+    Download or generate theme-specific gameplay videos.
+    Strategy: FFmpeg procedural generation (reliable) → Pexels search → direct URL fallback.
+    Returns True if at least one video was obtained.
+    """
+    GAMEPLAY_DIR.mkdir(parents=True, exist_ok=True)
+
+    themes_to_download = [theme] if theme else list(THEME_SEARCH_QUERIES.keys())
+    downloaded_any = False
+
+    for t in themes_to_download:
+        output_name = f"{t}_gameplay.mp4"
+        final_output = GAMEPLAY_DIR / output_name
+
+        # Skip if already exists and valid
+        if final_output.exists() and final_output.stat().st_size > 50_000:
+            print(f"[Background Downloader] {t} gameplay already exists: {output_name}")
+            downloaded_any = True
+            continue
+
+        success = False
+
+        # Strategy 1: Generate themed procedural video (reliable, no network needed)
+        print(f"[Background Downloader] Creating {t} themed gameplay...")
+        success = generate_themed_procedural_video(final_output, t, duration=90)
+
+        if not success:
+            # Strategy 2: Pexels search (may fail on CI)
+            queries = THEME_SEARCH_QUERIES.get(t, ["minecraft game"])
+            raw_download = GAMEPLAY_DIR / f"_raw_{t}.mp4"
+            for query in queries:
+                print(f"[Background Downloader] Searching Pexels for {t}: '{query}'...")
+                success = download_from_pexels(raw_download, query=query)
+                if success:
+                    break
+            if success:
+                transform_video(raw_download, final_output)
+                raw_download.unlink(missing_ok=True)
+                success = final_output.exists() and final_output.stat().st_size > 10_000
+
+        if not success:
+            # Strategy 3: Direct URL fallback
+            raw_download = GAMEPLAY_DIR / f"_raw_{t}.mp4"
+            success = download_from_direct_urls(raw_download)
+            if success:
+                transform_video(raw_download, final_output)
+                raw_download.unlink(missing_ok=True)
+                success = final_output.exists() and final_output.stat().st_size > 10_000
+
+        if success and final_output.exists() and final_output.stat().st_size > 10_000:
+            size_mb = final_output.stat().st_size / (1024 * 1024)
+            print(f"[Background Downloader] ✅ {t} themed gameplay ready: {output_name} ({size_mb:.1f} MB)")
+            downloaded_any = True
+        else:
+            print(f"[Background Downloader] ❌ Failed to create {t} themed gameplay")
+
+        # Cleanup any raw downloads
+        for tmp in GAMEPLAY_DIR.glob(f"_raw_{t}*"):
+            tmp.unlink(missing_ok=True)
+
+    return downloaded_any
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Download & transform gameplay for Shorts background")
+    parser.add_argument("--url", type=str, default=None, help="Video URL")
+    parser.add_argument("--force", action="store_true", help="Re-download")
+    parser.add_argument("--theme", type=str, default=None,
+                        choices=list(THEME_SEARCH_QUERIES.keys()),
+                        help="Download themed gameplay for specific theme")
+    parser.add_argument("--all-themes", action="store_true",
+                        help="Download gameplay for all themes")
+    args = parser.parse_args()
+
+    if args.force:
+        for f in GAMEPLAY_DIR.glob("minecraft_gameplay*"):
+            f.unlink()
+        for f in GAMEPLAY_DIR.glob("*_gameplay.mp4"):
+            f.unlink()
+
+    if args.all_themes:
+        success = download_themed_gameplay()
+    elif args.theme:
+        success = download_themed_gameplay(theme=args.theme)
+    else:
+        success = download_and_transform(url=args.url)
+
+    sys.exit(0 if success else 1)
 
 
 if __name__ == "__main__":

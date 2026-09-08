@@ -22,7 +22,7 @@ from src.script_generator import get_unique_script
 from src.tts_engine import generate_voiceover
 from src.video_composer import create_full_short_video
 from src.youtube_uploader import upload_short_to_youtube
-from scripts.download_background import ensure_gameplay_background
+from scripts.download_background import ensure_gameplay_background, download_themed_gameplay, GAMEPLAY_DIR
 
 OUTPUT_DIR = BASE_DIR / "output"
 
@@ -40,20 +40,30 @@ def run_pipeline(
     print(" 🚀 STARTING AI MINECRAFT FACTS SHORTS AUTOMATION PIPELINE")
     print("=" * 65)
 
-    # 1. Ensure gameplay background footage is available
-    print("\n[Step 1/5] Ensuring Minecraft gameplay background footage...")
-    bg_ready = ensure_gameplay_background()
-    if bg_ready:
-        print("  • ✅ Gameplay background ready")
-    else:
-        print("  • ⚠️ No gameplay footage available — will use animated backdrop")
-
-    # 2. Generate Unique Script
-    print("\n[Step 2/5] Generating unique viral Minecraft fact script...")
+    # 1. Generate Unique Script (first, so we know the theme)
+    print("\n[Step 1/5] Generating unique viral Minecraft fact script...")
     script_data = get_unique_script(force_topic=force_topic)
+    topic_theme = script_data.get("topic_theme", "overworld")
     print(f"  • Topic:       {script_data['topic']}")
     print(f"  • Title:       {script_data['title']}")
+    print(f"  • Theme:       {topic_theme}")
     print(f"  • Script Words: {len(script_data['voiceover_script'].split())} words")
+
+    # 2. Ensure themed gameplay background footage matches the topic
+    print(f"\n[Step 2/5] Ensuring {topic_theme}-themed gameplay background...")
+    bg_ready = False
+    theme_video = GAMEPLAY_DIR / f"{topic_theme}_gameplay.mp4"
+    if theme_video.exists() and theme_video.stat().st_size > 50_000:
+        print(f"  • ✅ {topic_theme} gameplay already available")
+        bg_ready = True
+    else:
+        bg_ready = download_themed_gameplay(theme=topic_theme)
+    if not bg_ready:
+        bg_ready = ensure_gameplay_background()
+    if bg_ready:
+        print(f"  • ✅ Gameplay background ready ({topic_theme})")
+    else:
+        print(f"  • ⚠️ No gameplay footage available — will use animated backdrop")
 
     # 3. Generate Voiceover & Subtitles
     print("\n[Step 3/5] Synthesizing neural voiceover and extracting word timestamps...")
@@ -66,9 +76,8 @@ def run_pipeline(
     print(f"  • Subtitle chunks: {len(sub_chunks)} phrases synced")
 
     # 4. Assemble Video
-    print("\n[Step 4/5] Compositing 9:16 Short (gameplay + subtitles + watermark + player avatar)...")
+    print(f"\n[Step 4/5] Compositing 9:16 Short ({topic_theme} theme: gameplay + subtitles + watermark + player avatar)...")
     video_output_path = str(OUTPUT_DIR / f"minecraft_short_{timestamp}.mp4")
-    topic_theme = script_data.get("topic_theme", "overworld")
     final_video = create_full_short_video(
         voiceover_path=audio_file,
         subtitle_chunks=sub_chunks,

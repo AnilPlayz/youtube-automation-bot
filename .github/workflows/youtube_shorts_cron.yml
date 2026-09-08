@@ -64,11 +64,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Download gameplay background
+      - name: Download themed gameplay backgrounds
         env:
           GAMEPLAY_SOURCE_URL: ${{ vars.GAMEPLAY_SOURCE_URL || 'https://youtu.be/OqPxaKs8xrk' }}
         run: |
-          echo "Downloading and transforming gameplay footage..."
+          echo "Downloading themed Minecraft gameplay footage..."
+          python scripts/download_background.py --all-themes || echo "⚠️ Themed download failed, trying generic..."
           python scripts/download_background.py || echo "⚠️ Gameplay download failed — will use animated backdrop"
 
       - name: Run Video Generation & YouTube Upload
